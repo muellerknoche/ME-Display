@@ -215,7 +215,6 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 } // END my_touchpad_read
 
 
-unsigned long now;
 
 //lv_obj_t * my_disp;
 //lv_display_set_rotation(my_disp,90);

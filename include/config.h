@@ -6,6 +6,7 @@
 bool pinOk = false;
 bool failed = false;
 
+unsigned long now;
 
 
 
