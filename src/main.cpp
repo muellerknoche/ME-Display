@@ -10,6 +10,7 @@
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 #include <ArduinoWebsockets.h>
 #include <WiFi.h>
+#include <config.h>
 
 #define SD_MOSI 11
 #define SD_MISO 13
@@ -224,7 +225,7 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 void setup()
 {
 	Serial.begin(115200);
-	while(!Serial){delay(100)}
+	while(!Serial){delay(100);}
 
 	Wire.begin(19, 20);
 

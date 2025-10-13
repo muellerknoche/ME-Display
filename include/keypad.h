@@ -2,6 +2,7 @@
 #define KEYPAD_H
 
 #include <lvgl.h>
+#include <config.h>
 
 // Konstanten für Tastenposition
 
@@ -61,7 +62,7 @@ void check_pin(uint8_t number)
 		if 	(fails == false)
 		{
 			Serial.println("SUCCESS  ");
-			pin_ok = true;
+			pinOk = true;
 			lv_obj_t *scr = lv_scr_act();
 			lv_obj_clean(scr);				// Clear Screen
 
@@ -77,7 +78,7 @@ void check_pin(uint8_t number)
 		{
 			failed = true;
 			Serial.println("FAIL    ");
-			pin_ok = false;
+			pinOk = false;
 			lv_obj_t * scr = lv_scr_act();
 			lv_obj_clean(scr);
 //			lv_obj_set_style_bg_color(scr,lv_palette_main(LV_PALETTE_RED),LV_PART_MAIN);
