@@ -145,8 +145,17 @@ uint8_t eingabe_zaehler = 0;
 // Array enthaelt eingegebene PIN
 int incode[4];
 
-// text auf TFT anzeigen
-void print_msg(char message[], uint32_t pos_X, uint32_t pos_Y, uint8_t schrift = 0)
+
+/**
+ * @brief Anzeige einer Nachricht an Pos X,Y. 0,0 ist Display rechts oben. 
+ * @note Achtung Display wird Portrait eingebaut ist aber Landscape orientiert.
+ * @note Optionaler Paramter "schrift" für spaetere Auswertung
+ * @param String anzuzeigender Text
+ * @param int posX (von rechts oben nach unten)
+ * @param int posY (von rechts oben nach links) 
+ * @param int schrift = 0 Size = 46 (default) schrift = 1 Size =24
+ */
+void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 {
 	lv_obj_t * msg_text;
 	msg_text = lv_label_create(lv_scr_act());
@@ -215,17 +224,53 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	delay(15);
 } // END my_touchpad_read
 
-
+/**
+ * @brief Check if timmer has timed out
+ * @param starttime set with millis at start
+ * @param wait time it shoud run
+ * @returns true if yes
+ */
+bool mytimer(unsigned long timer, unsigned long wait)
+{
+    bool erg = false;
+    if (millis() > (timer + wait))
+    {
+        erg = true;
+    }
+    return erg;
+}
 
 //lv_obj_t * my_disp;
 //lv_display_set_rotation(my_disp,90);
 
 #include <keypad.h>
 
+/**
+ * @brief Switch TFT Backlight ON or OFF
+ * @param state true switch ON false switch OFF
+ */
+void backlight_OnOff(bool state)
+{
+	if (state)
+	{
+		digitalWrite(TFT_BL, HIGH);
+	} else {
+		digitalWrite(TFT_BL, LOW);
+	}
+}
+
+	// has to be outside any function
+	using namespace websockets;
+	WebsocketsServer server;
+	WebsocketsClient client;
+
+
 void setup()
 {
-	Serial.begin(115200);
+	Serial.begin(115200);			// Start Serial
 	while(!Serial){delay(100);}
+
+	pinMode(TFT_BL, OUTPUT);		// Backlight Control
 
 	Wire.begin(19, 20);
 
@@ -271,19 +316,13 @@ void setup()
     // ... initialize disp_drv ...
     //disp_drv.rotated = LV_DISP_ROT_90;
 
-// Hintergrundbeleuchtung Ein
-#ifdef TFT_BL
-	pinMode(TFT_BL, OUTPUT);
-	digitalWrite(TFT_BL, HIGH);
-#endif
-
 	
 	lv_timer_handler();
 
 
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
 
-	create_buttons(0);
+	// COMMENT for now !!!!!!create_buttons(0)!!!!!!!!;
 
 	// from SD later
 	// fuer WiFi
@@ -292,13 +331,11 @@ void setup()
 	// Use this IP address (local_ip) in the ESP32-CAM (client) program code.
 	// Use it in the "websockets_server_host" variable.
 	IPAddress local_ip(192,168,1,1);
+
 	IPAddress gateway(192,168,1,1);
 	IPAddress subnet(255,255,255,0);
+	//-----------------------------------
 	// end from SD
-
-	using namespace websockets;
-	WebsocketsServer server;
-	WebsocketsClient client;
 
 	// Setup WiFi
 	//-Create ESP32 as Access Point and start the server.
@@ -346,77 +383,157 @@ void setup()
 
 void loop()
 {
-	// --------------------------
-	if(pinOk)
+
+	if (first)				// only once here
 	{
-
-		if (millis() > (now + wait))
-		{
-			pinOk = false;
-			eingabe_zaehler = 0;
-			create_buttons(0);
-			Serial.println("time out pin ok");
-			print_time_rest("",1);
-		}
-		else
-		{
-			if (millis() > (now + (wait - 9000)))
-			{
-				print_time_rest("",1);
-				print_time_rest("Video noch 9 Sekunden");
-			}
-
-			if (millis() > (now + (wait - 7000)))
-			{
-				print_time_rest("",1);
-				print_time_rest("Video noch 7 Sekunden");
-			}
-
-			if (millis() > (now + (wait - 5000)))
-			{
-				print_time_rest("",1);
-				print_time_rest("Video noch 5 Sekunden");
-			}
-				if (millis() > (now + (wait - 3000)))
-			{
-				print_time_rest("",1);
-				print_time_rest("Video noch 3 Sekunden");
-			}
-
-				if (millis() > (now + (wait - 1000)))
-			{
-				print_time_rest("",1);
-				print_time_rest("Video noch 1 Sekunde");
-			}
-		}
+		Serial.println("IN LOOP");
+		first = false;		// block second message
 	}
-	if (failed)
+
+	if (ftouch) 
 	{
-		if (millis() > (now + err_time))
+		ftouch = true; // ???????
+		if (touch_has_signal())
 		{
-			failed = false;
-			eingabe_zaehler = 0;
-			create_buttons(0);
-		
-			Serial.println("time out error");
-			print_msg("",430,180,1);
-			print_time_rest("",1);
-		}
-		else
-		{
-			if (millis() > (now + err_time - 2000))
+			if (touch_touched())				// if display touched switch backlight on
 			{
-				print_time_rest("",1);
-				print_time_rest("Fehler noch 2 Sekunden");
-			}
-			if (millis() > (now + (err_time - 1000)))
-			{
-				print_time_rest("",1);
-				print_time_rest("Fehler noch 1 Sekunde");
+				backlight_OnOff(true);			// set BL On
+				if (!dispOutRuns)
+				{
+					dispOutStart = millis();	// set startTime
+					dispOutRuns = true;			// start Timer
+				}
+				
+				create_buttons(1);
 			}
 		}
 	}
 	
+	//------------------------------------------------
+	// check if Display Timer is at end only if active
+	if (dispOutRuns)
+	{
+		if (mytimer(dispOutStart, dispTimeout) )		
+		{
+			dispOutRuns = false;			
+			backlight_OnOff(false);
+			showVideo = false;
+			//Clear everything
+		}
+	}
+	
+
+	// Start the Viodo and the Timer only once
+	if (pinOk && !pinOkSet)
+	{
+		// Start the Timer
+		videoOutStart = millis();
+		videoOutRuns = true;
+		pinOkSet = true;
+	}
+	//----------------------------------------------
+
+	// video timer auswerten 
+
+
+
+
+
+  	if(server.poll())
+	{
+    	client = server.accept();
+  	}
+	
+  	if(client.available())
+	{
+    	client.poll();
+
+    	WebsocketsMessage msg = client.readBlocking();
+
+
+		if (pinOkSet)
+		{
+			lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length()); // draws the JPEG on the screen
+		}
+
+
+
+  		//  Serial.println(msg.len());
+	}	
+
+
+
+	// --------------------------
+	// comment for the moment, just show video
+	// if(pinOk)
+	// {
+
+	// 	if (millis() > (now + wait))
+	// 	{
+	// 		pinOk = false;
+	// 		eingabe_zaehler = 0;
+	// 		create_buttons(0);
+	// 		Serial.println("time out pin ok");
+	// 		print_time_rest("",1);
+	// 	}
+	// 	else
+	// 	{
+	// 		if (millis() > (now + (wait - 9000)))
+	// 		{
+	// 			print_time_rest("",1);
+	// 			print_time_rest("Video noch 9 Sekunden");
+	// 		}
+
+	// 		if (millis() > (now + (wait - 7000)))
+	// 		{
+	// 			print_time_rest("",1);
+	// 			print_time_rest("Video noch 7 Sekunden");
+	// 		}
+
+	// 		if (millis() > (now + (wait - 5000)))
+	// 		{
+	// 			print_time_rest("",1);
+	// 			print_time_rest("Video noch 5 Sekunden");
+	// 		}
+	// 			if (millis() > (now + (wait - 3000)))
+	// 		{
+	// 			print_time_rest("",1);
+	// 			print_time_rest("Video noch 3 Sekunden");
+	// 		}
+
+	// 			if (millis() > (now + (wait - 1000)))
+	// 		{
+	// 			print_time_rest("",1);
+	// 			print_time_rest("Video noch 1 Sekunde");
+	// 		}
+	// 	}
+	// }
+	// if (failed)
+	// {
+	// 	if (millis() > (now + err_time))
+	// 	{
+	// 		failed = false;
+	// 		eingabe_zaehler = 0;
+	// 		create_buttons(0);
+		
+	// 		Serial.println("time out error");
+	// 		print_msg("",430,180,1);
+	// 		print_time_rest("",1);
+	// 	}
+	// 	else
+	// 	{
+	// 		if (millis() > (now + err_time - 2000))
+	// 		{
+	// 			print_time_rest("",1);
+	// 			print_time_rest("Fehler noch 2 Sekunden");
+	// 		}
+	// 		if (millis() > (now + (err_time - 1000)))
+	// 		{
+	// 			print_time_rest("",1);
+	// 			print_time_rest("Fehler noch 1 Sekunde");
+	// 		}
+	// 	}
+	// }
 	
 	lv_timer_handler(); /* let the GUI do its work */
 	delay( 10 );

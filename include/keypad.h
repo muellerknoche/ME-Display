@@ -6,33 +6,39 @@
 
 // Konstanten für Tastenposition
 
-uint32_t col_1 = (480 -290)/2;
-uint32_t col_2 = col_1 + 100;
-uint32_t col_3 = col_2 + 100;
+int col_1 = 400;//(480 -290)/2;
+int col_2 = col_1 - 100;
+int col_3 = col_2 - 100;
 
-uint32_t row_1 = 790;
-uint32_t row_2 = row_1 -100;
-uint32_t row_3 = row_2 - 100;
-uint32_t row_4 = row_3 - 100;
+int row_1 = 10;
+int row_2 = row_1 + 100; 
+int row_3 = row_2 + 100;
+int row_4 = row_3 + 100;
 
-uint32_t sizeX = 90;
-uint32_t sizeY = 90;
+int sizeX = 90;
+int sizeY = 90;
 
 // prueft nach Eingabe der PIN Laenge auf Gueltigkeit
 void check_pin(uint8_t number)
 {
-	Serial.print("Eingabezaehler: ");
+	dispOutStart = millis();				// Ausschalten des Bildschirms verhindern
+	Serial.print("Eingabezaehler: ");		// zaehlt eingegeben Zeichen
 	Serial.println(eingabe_zaehler);
 	// wenn Anzahl Ziffern der PIN erreicht prüfen
-	uint32_t loop_pos = 400;
+	
 	bool fails = false;					// default OK
 	Serial.print("Eingabezähler vor if: ");
 	Serial.println(eingabe_zaehler);
 
 	if (eingabe_zaehler < 4)
 	{
-		print_msg("input loop",600,50);
-		print_msg( "*",loop_pos + eingabe_zaehler * 50,10,1);
+		// Kennung für Eingabe anzeigen unter KeyPad
+		// ist fix Y wandert
+		print_msg( "*",loopPosX, loopPosY+ eingabe_zaehler * 50,1);
+
+
+
+		//print_msg( "*",loopPosX + eingabe_zaehler * 50,10,1);
 		Serial.print("number: ");
 		Serial.println(number);
 		incode[eingabe_zaehler] = number;		// Eingabe speichern
@@ -67,10 +73,7 @@ void check_pin(uint8_t number)
 			lv_obj_clean(scr);				// Clear Screen
 
 //			lv_obj_set_style_bg_color(scr,lv_palette_main(LV_PALETTE_GREEN),LV_PART_MAIN);
-			
-			print_time_rest(" Video noch 10 Sekunden");
 
-			now	= millis();
 
 			// Video freigeben
 		}
@@ -278,39 +281,40 @@ static void ok_event(lv_event_t * e)
 		// lv_obj_set_style_text_font(ok_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		// lv_label_set_text(ok_txt, "*OK");
 		Serial.println("OK pressed");
-		// ok_fuc			// Ausfuehren wenn OK
+		// ok_func			// Ausfuehren wenn OK
 	}
 }
 
-void create_buttons(uint8_t farbe)
+
+/**
+ * @brief 10er Tastatur erzuegen
+ * @note erzeugt eine 10er Tastatur mit CLEAR und OK zur Eingabe einer PIN
+ * Display ist in Landscape Tasten um 270 ° gedreht, damit in Portrait  Richtung eingebaut werden kann
+ * Parameter farbe für Erweiterung
+ * @param uint8_t farbe = 0 Option
+ */
+void create_buttons(uint8_t farbe = 0)
 {
 	if (farbe < 10)
 	{
 		// Button EINS
 		lv_obj_t * eins = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(eins, row_1, col_1);					/*Set its position*/
+		lv_obj_set_pos(eins, row_1, col_1);								/*Set its position*/
 		lv_obj_set_size(eins, sizeX, sizeY);							/*Set its size*/
-	
 		lv_obj_add_event_cb(eins, eins_event, LV_EVENT_ALL, NULL);
-	
-		lv_obj_set_style_transform_angle(eins, 900, 0);
-	
-
+		lv_obj_set_style_transform_angle(eins, 2700, 0);
 		lv_obj_add_event_cb(eins, eins_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
 		lv_obj_t * l_eins = lv_label_create(eins);						/*Add a label to the button*/
 		lv_label_set_text(l_eins, "1");									/*Set the labeks text*/
 		lv_obj_set_style_text_font(l_eins, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_obj_center(l_eins);
 		
-
 		// Button ZWEI
 		lv_obj_t * zwei = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(zwei, row_1, col_2);					/*Set its position*/
+		lv_obj_set_pos(zwei, row_1, col_2);								/*Set its position*/
 		lv_obj_set_size(zwei, sizeX, sizeY);							/*Set its size*/
-		lv_obj_add_event_cb(zwei, zwei_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(zwei, 900, 0);	
-		
+		lv_obj_add_event_cb(zwei, zwei_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
+		lv_obj_set_style_transform_angle(zwei, 2700, 0);	
 		lv_obj_t * l_zwei = lv_label_create(zwei);						/*Add a label to the button*/
 		lv_obj_set_style_text_font(l_zwei, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_zwei, "2");									/*Set the labeks text*/
@@ -318,12 +322,10 @@ void create_buttons(uint8_t farbe)
 
 		// Button DREI
 		lv_obj_t * drei = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(drei, row_1,col_3);					/*Set its position*/
+		lv_obj_set_pos(drei, row_1,col_3);								/*Set its position*/
 		lv_obj_set_size(drei, sizeX, sizeY);							/*Set its size*/
-		lv_obj_add_event_cb(drei, drei_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(drei, 900, 0);
-
+		lv_obj_add_event_cb(drei, drei_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
+		lv_obj_set_style_transform_angle(drei, 2700, 0);
 		lv_obj_t * l_drei = lv_label_create(drei);						/*Add a label to the button*/
 		lv_obj_set_style_text_font(l_drei, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_drei, "3");									/*Set the labeks text*/
@@ -331,12 +333,10 @@ void create_buttons(uint8_t farbe)
 
 		// Button VIER
 		lv_obj_t * vier = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(vier,row_2, col_1);					/*Set its position*/
+		lv_obj_set_pos(vier,row_2, col_1);								/*Set its position*/
 		lv_obj_set_size(vier, sizeX, sizeY);							/*Set its size*/
-		lv_obj_add_event_cb(vier, vier_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(vier, 900, 0);	
-
+		lv_obj_add_event_cb(vier, vier_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
+		lv_obj_set_style_transform_angle(vier, 2700, 0);	
 		lv_obj_t * l_vier = lv_label_create(vier);						/*Add a label to the button*/
 		lv_obj_set_style_text_font(l_vier, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_vier, "4");									/*Set the labeks text*/
@@ -344,51 +344,43 @@ void create_buttons(uint8_t farbe)
 
 		// Button FUENF
 		lv_obj_t * fuenf = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(fuenf, row_2, col_2);					/*Set its position*/
+		lv_obj_set_pos(fuenf, row_2, col_2);							/*Set its position*/
 		lv_obj_set_size(fuenf, sizeX, sizeY);							/*Set its size*/
 		lv_obj_add_event_cb(fuenf, fuenf_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(fuenf, 900, 0);	
-
-		lv_obj_t * l_fuenf = lv_label_create(fuenf);						/*Add a label to the button*/
+		lv_obj_set_style_transform_angle(fuenf, 2700, 0);	
+		lv_obj_t * l_fuenf = lv_label_create(fuenf);					/*Add a label to the button*/
 		lv_obj_set_style_text_font(l_fuenf, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		lv_label_set_text(l_fuenf, "5");									/*Set the labeks text*/
+		lv_label_set_text(l_fuenf, "5");								/*Set the labeks text*/
 		lv_obj_center(l_fuenf);
 
 		// Button SECHS
 		lv_obj_t * sechs = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(sechs, row_2, col_3);					/*Set its position*/
+		lv_obj_set_pos(sechs, row_2, col_3);							/*Set its position*/
 		lv_obj_set_size(sechs, sizeX, sizeY);							/*Set its size*/
 		lv_obj_add_event_cb(sechs, sechs_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(sechs, 900, 0);	
-
-		lv_obj_t * l_sechs = lv_label_create(sechs);						/*Add a label to the button*/
+		lv_obj_set_style_transform_angle(sechs, 2700, 0);	
+		lv_obj_t * l_sechs = lv_label_create(sechs);					/*Add a label to the button*/
 		lv_obj_set_style_text_font(l_sechs, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		lv_label_set_text(l_sechs, "6");									/*Set the labeks text*/
+		lv_label_set_text(l_sechs, "6");								/*Set the labeks text*/
 		lv_obj_center(l_sechs);
 
 		// Button SIEBEN
-		lv_obj_t * sieben = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(sieben, row_3, col_1);					/*Set its position*/
+		lv_obj_t * sieben = lv_btn_create(lv_scr_act());				/*Add a button the current screen*/
+		lv_obj_set_pos(sieben, row_3, col_1);							/*Set its position*/
 		lv_obj_set_size(sieben, sizeX, sizeY);							/*Set its size*/
 		lv_obj_add_event_cb(sieben, sieben_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(sieben, 900, 0);	
-
-		lv_obj_t * l_sieben = lv_label_create(sieben);						/*Add a label to the button*/
-		lv_obj_set_style_text_font(l_sieben, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		lv_label_set_text(l_sieben, "7");									/*Set the labeks text*/
+		lv_obj_set_style_transform_angle(sieben, 2700, 0);	
+		lv_obj_t * l_sieben = lv_label_create(sieben);					/*Add a label to the button*/
+		lv_obj_set_style_text_font(l_sieben, &lv_font_montserrat_46, 0);/**Set the labels text*/
+		lv_label_set_text(l_sieben, "7");								/*Set the labeks text*/
 		lv_obj_center(l_sieben);
 
 		// Button ACHT
 		lv_obj_t * acht = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(acht, row_3, col_2);					/*Set its position*/
+		lv_obj_set_pos(acht, row_3, col_2);								/*Set its position*/
 		lv_obj_set_size(acht, sizeX, sizeY);							/*Set its size*/
-		lv_obj_add_event_cb(acht, acht_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(acht, 900, 0);	
-
+		lv_obj_add_event_cb(acht, acht_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
+		lv_obj_set_style_transform_angle(acht, 2700, 0);	
 		lv_obj_t * l_acht = lv_label_create(acht);						/*Add a label to the button*/
 		lv_obj_set_style_text_font(l_acht, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_acht, "8");									/*Set the labeks text*/
@@ -396,12 +388,10 @@ void create_buttons(uint8_t farbe)
 
 		// Button NEUN
 		lv_obj_t * neun = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(neun, row_3, col_3);					/*Set its position*/
+		lv_obj_set_pos(neun, row_3, col_3);								/*Set its position*/
 		lv_obj_set_size(neun, sizeX, sizeY);							/*Set its size*/
-		lv_obj_add_event_cb(neun, neun_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(neun, 900, 0);	
-
+		lv_obj_add_event_cb(neun, neun_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
+		lv_obj_set_style_transform_angle(neun, 2700, 0);	
 		lv_obj_t * l_neun = lv_label_create(neun);						/*Add a label to the button*/
 		lv_obj_set_style_text_font(l_neun, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_neun, "9");									/*Set the labeks text*/
@@ -409,47 +399,45 @@ void create_buttons(uint8_t farbe)
 
 		// Button CLEAR
 		lv_obj_t * clear = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(clear, row_4, col_1);					/*Set its position*/
+		lv_obj_set_pos(clear, row_4, col_1);							/*Set its position*/
 		lv_obj_set_size(clear, sizeX, sizeY);							/*Set its size*/
-		lv_obj_add_event_cb(clear, cl_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(clear, 900, 0);	
-
-		lv_obj_t * l_clear = lv_label_create(clear);						/*Add a label to the button*/
+		lv_obj_add_event_cb(clear, cl_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
+		lv_obj_set_style_transform_angle(clear, 2700, 0);	
+		lv_obj_t * l_clear = lv_label_create(clear);					/*Add a label to the button*/
 		lv_obj_set_style_text_font(l_clear, &lv_font_montserrat_36, 0);	/**Set the labels text*/
-		lv_label_set_text(l_clear, "Clear");									/*Set the labeks text*/
+		lv_label_set_text(l_clear, "Clear");							/*Set the labeks text*/
 		lv_obj_center(l_clear);
 
 		// Button NULL
 		lv_obj_t * nullx = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(nullx, row_4, col_2);					/*Set its position*/
+		lv_obj_set_pos(nullx, row_4, col_2);							/*Set its position*/
 		lv_obj_set_size(nullx, sizeX, sizeY);							/*Set its size*/
 		lv_obj_add_event_cb(nullx, nullx_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(nullx, 900, 0);	
-
-		lv_obj_t * l_nullx = lv_label_create(nullx);						/*Add a label to the button*/
+		lv_obj_set_style_transform_angle(nullx, 2700, 0);	
+		lv_obj_t * l_nullx = lv_label_create(nullx);					/*Add a label to the button*/
 		lv_obj_set_style_text_font(l_nullx, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		lv_label_set_text(l_nullx, "0");									/*Set the labeks text*/
+		lv_label_set_text(l_nullx, "0");								/*Set the labeks text*/
 		lv_obj_center(l_nullx);
 
 		// Button OK
 		lv_obj_t * okx = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(okx, row_4, col_3);					/*Set its position*/
-		lv_obj_set_size(okx, sizeX, sizeY);							/*Set its size*/
-		lv_obj_add_event_cb(okx, ok_event, LV_EVENT_ALL, NULL);	/*Assign a callback to the button*/
-
-		lv_obj_set_style_transform_angle(okx, 900, 0);
+		lv_obj_set_pos(okx, row_4, col_3);								/*Set its position*/
+		lv_obj_set_size(okx, sizeX, sizeY);								/*Set its size*/
+		lv_obj_add_event_cb(okx, ok_event, LV_EVENT_ALL, NULL);			/*Assign a callback to the button*/
+		lv_obj_set_style_transform_angle(okx, 2700, 0);
 
 		//lv_obj_set_style_local_bg_color(okx, LV_BTN_MAIN, LV_STATE_DEFAULT, LV_COLOR_RED);
 		lv_obj_t * l_okx = lv_label_create(okx);						/*Add a label to the button*/
+
 		lv_obj_set_style_text_font(l_okx, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 
 		//		lv_obj_set_style_text_color(l_okx,);
+
 		lv_label_set_text(l_okx, "OK");									/*Set the labeks text*/
 		lv_obj_center(l_okx);
 	}
-		// ok_func()						// kamera ein
+	// ok_func()														// kamera ein
 
 } // end create_buttons
+
 #endif  // KEYPAD_H
