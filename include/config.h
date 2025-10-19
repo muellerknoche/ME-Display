@@ -24,7 +24,7 @@ bool pinOkSet = false;                  // Video und Timer nur einmal
 unsigned long now;
 
 int loopPosX = 500;
-int loopPosY = 300;
+int loopPosY = 350;
 
 
 

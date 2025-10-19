@@ -34,11 +34,9 @@ void check_pin(uint8_t number)
 	{
 		// Kennung für Eingabe anzeigen unter KeyPad
 		// ist fix Y wandert
-		print_msg( "*",loopPosX, loopPosY+ eingabe_zaehler * 50,1);
+		print_msg( "*",loopPosX, loopPosY - (100 * eingabe_zaehler),1);
 
 
-
-		//print_msg( "*",loopPosX + eingabe_zaehler * 50,10,1);
 		Serial.print("number: ");
 		Serial.println(number);
 		incode[eingabe_zaehler] = number;		// Eingabe speichern
