@@ -8,6 +8,10 @@ bool failed = false;
 
 bool showVideo = false;
 
+// Zaehler PIN Eingabe
+uint8_t eingabe_zaehler = 0;
+
+
 bool first = true;
 bool ftouch = true;
 

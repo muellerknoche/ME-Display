@@ -11,6 +11,7 @@
 #include <ArduinoWebsockets.h>
 #include <WiFi.h>
 #include <config.h>
+#include <my_tools.h>
 
 #define SD_MOSI 11
 #define SD_MISO 13
@@ -19,7 +20,7 @@
 
 //SPIClass SD_SPI;
 
-
+#define DEBUG
 #define TFT_BL 2
 
 
@@ -140,8 +141,6 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 // Hinterlegte PIN später von SD CARD
 uint8_t code_fix[4] = {1,1,1,1};
 
-// Zaehler PIN Eingabe
-uint8_t eingabe_zaehler = 0;
 // Array enthaelt eingegebene PIN
 int incode[4];
 
@@ -413,8 +412,11 @@ void loop()
 	// check if Display Timer is at end only if active
 	if (dispOutRuns)
 	{
-		if (mytimer(dispOutStart, dispTimeout) )		
+		if (my_timer(dispOutStart, dispTimeout) )		
 		{
+			#ifdef DEBUG
+				Serial.println("DisplayTimer end");
+			#endif
 			dispOutRuns = false;			
 			backlight_OnOff(false);
 			showVideo = false;
