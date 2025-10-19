@@ -301,7 +301,6 @@ void create_buttons(uint8_t farbe = 0)
 		lv_obj_t * eins = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(eins, row_1, col_1);								/*Set its position*/
 		lv_obj_set_size(eins, sizeX, sizeY);							/*Set its size*/
-		lv_obj_add_event_cb(eins, eins_event, LV_EVENT_ALL, NULL);
 		lv_obj_set_style_transform_angle(eins, 2700, 0);
 		lv_obj_add_event_cb(eins, eins_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
 		lv_obj_t * l_eins = lv_label_create(eins);						/*Add a label to the button*/
