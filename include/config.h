@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+#define TFT_BL 2
+
 bool pinOk = false;
 bool failed = false;
 
@@ -12,6 +14,8 @@ bool showVideo = false;
 uint8_t eingabe_zaehler = 0;
 
 uint8_t pin_len = 4;
+// Array enthaelt eingegebene PIN
+int incode[4];
 
 bool first = true;
 bool ftouch = true;

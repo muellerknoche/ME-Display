@@ -148,16 +148,9 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 
 } // END my_disp_flush
 
-
-
-
-// fuer PIN chck
+// fuer PIN check
 // Hinterlegte PIN später von SD CARD
 uint8_t code_fix[4] = {1,1,1,1};
-
-// Array enthaelt eingegebene PIN
-int incode[4];
-
 
 /**
  * @brief Anzeige einer Nachricht an Pos X,Y. 0,0 ist Display rechts oben. 
@@ -207,7 +200,6 @@ void print_time_rest(char message[], uint8_t clear_it = 0)
 	}
 }
 
-
 // Anzeige Touch Position auf Monitor
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 {
@@ -223,10 +215,10 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 			#ifdef DEBUG
 				Serial.print( "Data x :" );
 				Serial.println( touch_last_x );
-
 				Serial.print( "Data y :" );
 				Serial.println( touch_last_y );
 			#endif
+
 		}
 		else if (touch_released())
 		{
@@ -240,40 +232,11 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	delay(15);
 } // END my_touchpad_read
 
-/**
- * @brief Check if timmer has timed out
- * @param starttime set with millis at start
- * @param wait time it shoud run
- * @returns true if yes
- */
-bool mytimer(unsigned long timer, unsigned long wait)
-{
-    bool erg = false;
-    if (millis() > (timer + wait))
-    {
-        erg = true;
-    }
-    return erg;
-}
-
 //lv_obj_t * my_disp;
 //lv_display_set_rotation(my_disp,90);
 
 #include <keypad.h>
 
-/**
- * @brief Switch TFT Backlight ON or OFF
- * @param state true switch ON false switch OFF
- */
-void backlight_OnOff(bool state)
-{
-	if (state)
-	{
-		digitalWrite(TFT_BL, HIGH);
-	} else {
-		digitalWrite(TFT_BL, LOW);
-	}
-}
 
 	// has to be outside any function
 	using namespace websockets;
