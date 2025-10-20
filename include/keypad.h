@@ -4,6 +4,7 @@
 #include <lvgl.h>
 #include <config.h>
 
+
 // Konstanten für Tastenposition
 
 int col_1 = 400;//(480 -290)/2;
@@ -21,35 +22,43 @@ int sizeY = 90;
 // prueft nach Eingabe der PIN Laenge auf Gueltigkeit
 void check_pin(uint8_t number)
 {
-	dispOutStart = millis();				// Ausschalten des Bildschirms verhindern
-	Serial.print("Eingabezaehler: ");		// zaehlt eingegeben Zeichen
-	Serial.println(eingabe_zaehler);
-	// wenn Anzahl Ziffern der PIN erreicht prüfen
-	
-	bool fails = false;					// default OK
-	Serial.print("Eingabezähler vor if: ");
-	Serial.println(eingabe_zaehler);
+	BL_timer_start_time = millis();					// Ausschalten des Bildschirms verhindern
+	bool fails = false;								// default OK
 
+	#ifdef DEBUG
+		Serial.print("START ");
+		Serial.println(millis()); 
+		Serial.print("Eingabezaehler: ");				// zaehlt eingegeben Zeichen
+		Serial.println(eingabe_zaehler);
+	#endif
+
+	// check for max
 	if (eingabe_zaehler < 4)
 	{
 		// Kennung für Eingabe anzeigen unter KeyPad
 		// ist fix Y wandert
 		print_msg( "*",loopPosX, loopPosY - (100 * eingabe_zaehler),1);
 
+		#ifdef DEBUG
+			Serial.print("number: ");
+			Serial.println(number);
+		#endif
 
-		Serial.print("number: ");
-		Serial.println(number);
 		incode[eingabe_zaehler] = number;		// Eingabe speichern
 		eingabe_zaehler ++;
-		Serial.print("Eingabezähler: ");
-		Serial.println(eingabe_zaehler);
+
+		#ifdef DEBUG
+			Serial.print(millis());
+			Serial.println(" END");
+		#endif
+
 	}
 
 	if (eingabe_zaehler == 4)
 	{
-		Serial.println("START CHECK >>>>>>:");
-		print_msg("           ",600,100);
-		//print_msg("Start Check",600,100);
+//		Serial.println("START CHECK >>>>>>:");
+//		print_msg("           ",600,100);
+//		//print_msg("Start Check",600,100);
 		uint8_t i = 0;
 		for (i = 0;i < 4;i++)
 		{
@@ -65,7 +74,7 @@ void check_pin(uint8_t number)
 		}
 		if 	(fails == false)
 		{
-			Serial.println("SUCCESS  ");
+			BL_timer_active = false;
 			pinOk = true;
 			lv_obj_t *scr = lv_scr_act();
 			lv_obj_clean(scr);				// Clear Screen
@@ -86,8 +95,6 @@ void check_pin(uint8_t number)
 
 			//print_msg("FEHLER",430,180,1);
 			
-            print_time_rest("Fehler noch 3 Sekunden");
-			now	= millis();
 		}
 	}
 }  // End check PIN

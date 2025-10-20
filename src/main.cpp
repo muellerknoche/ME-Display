@@ -1,3 +1,17 @@
+/**
+ * @brief Projekt Max-Exstein Video Spion
+ * @authors Rainer Müller-Knoche, Elecrow
+ * @note based on a Demo for the Cropanel HMI 5 inch 800x480 Display and the
+ * ESP32-CAM_to_ESP32 Software found on the net streaming from CAM to TFT
+ * @date startet in August 2025
+ * @date now 20. Okt. 2025 nearly finished
+ * 
+ */
+
+#include <Arduino.h>
+
+#define DEBUG				// comment for final
+
 #include <lvgl.h>
 #include <FS.h>
 #include <SD.h>
@@ -205,11 +219,14 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 			/*Set the coordinates*/
 			data->point.x = touch_last_x;
 			data->point.y = touch_last_y;
-			Serial.print( "Data x :" );
-			Serial.println( touch_last_x );
 
-			Serial.print( "Data y :" );
-			Serial.println( touch_last_y );
+			#ifdef DEBUG
+				Serial.print( "Data x :" );
+				Serial.println( touch_last_x );
+
+				Serial.print( "Data y :" );
+				Serial.println( touch_last_y );
+			#endif
 		}
 		else if (touch_released())
 		{
@@ -376,10 +393,6 @@ void setup()
 	//print_msg("Waiting for CAM ...",500, 10);
 }	// End Setup
 
-	const unsigned long wait = 100;		// show Video time
-	const unsigned long err_time = 300;	// wait till next input
-
-
 void loop()
 {
 
@@ -394,43 +407,54 @@ void loop()
 		ftouch = true; // ???????
 		if (touch_has_signal())
 		{
-			if (touch_touched())				// if display touched switch backlight on
+			if (touch_touched())					// if display touched switch backlight on
 			{
-				backlight_OnOff(true);			// set BL On
-				if (!dispOutRuns)
+				backlight_OnOff(true);				// set BL On
+				if (!BL_timer_active)
 				{
-					dispOutStart = millis();	// set startTime
-					dispOutRuns = true;			// start Timer
+					BL_timer_start_time = millis();	// set startTime
+					BL_timer_active = true;			// start Timer
+					video_timer_active = false; 	// für all
 				}
-				
 				create_buttons(1);
 			}
 		}
 	}
 	
 	//------------------------------------------------
-	// check if Display Timer is at end only if active
-	if (dispOutRuns)
+	// check if BL Timer is at end only if active
+	if (BL_timer_active)
 	{
-		if (my_timer(dispOutStart, dispTimeout) )		
+		if (my_timer(BL_timer_start_time, BL_timeout))		
 		{
 			#ifdef DEBUG
 				Serial.println("DisplayTimer end");
 			#endif
-			dispOutRuns = false;			
+			BL_timer_active = false;			
 			backlight_OnOff(false);
 			showVideo = false;
 			//Clear everything
 		}
 	}
-	
+	//---------------------------------------------------
+	if (video_timer_active)
+	{
+		if (my_timer,(video_timer_start_time, video_timeout ))
+		{
+			#ifdef DEBUG
+				Serial.println("Video aus");
+			#endif
+			video_timer_active = false;
+			showVideo = false;
+		}
+}
 
 	// Start the Viodo and the Timer only once
 	if (pinOk && !pinOkSet)
 	{
 		// Start the Timer
-		videoOutStart = millis();
-		videoOutRuns = true;
+		video_timer_start_time = millis();
+		video_timer_active = true;
 		pinOkSet = true;
 	}
 	//----------------------------------------------
