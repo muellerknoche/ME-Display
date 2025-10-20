@@ -60,16 +60,24 @@ void check_pin(uint8_t number)
 //		print_msg("           ",600,100);
 //		//print_msg("Start Check",600,100);
 		uint8_t i = 0;
-		for (i = 0;i < 4;i++)
+		for (uint8_t i = 0;i < pin_len; i++)
 		{
-			Serial.print("LOOP i: ");
-			Serial.print(i); 	Serial.print(" INCODE: "); Serial.println(incode[i]);
-			Serial.print("code_fix: "); Serial.print(code_fix[i]);
+
+			#ifdef DEBUG
+				Serial.print("LOOP i: "); Serial.print(i);
+				Serial.print(" INCODE: "); Serial.print(incode[i]);
+				Serial.print(" code_fix: ");Serial.println(code_fix[i]);
+			#endif
+
 			if (code_fix[i] != incode[i])
 			{
-				Serial.print("LOOP i "); Serial.print(i); Serial.println("  Not equal Abbruch");
-				fails = true;
-				i = 5;		// force end
+
+				#ifdef DEBUG
+					Serial.print("LOOP i "); Serial.print(i); Serial.println("  Not equal Abbruch");
+				#endif
+
+				fails = true;				// fehlerhafte Eingabe
+				i = pin_len + 1;			// force end, loopcount > mx
 			}
 		}
 		if 	(fails == false)
@@ -82,7 +90,6 @@ void check_pin(uint8_t number)
 //			lv_obj_set_style_bg_color(scr,lv_palette_main(LV_PALETTE_GREEN),LV_PART_MAIN);
 
 
-			// Video freigeben
 		}
 		else
 		{
