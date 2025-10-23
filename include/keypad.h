@@ -4,7 +4,7 @@
 #include <lvgl.h>
 #include <config.h>
 
-
+#define TFT_Bl 2
 // Konstanten für Tastenposition
 
 int col_1 = 400;//(480 -290)/2;
@@ -33,7 +33,7 @@ void check_pin(uint8_t number)
 	#endif
 
 	// check for max
-	if (eingabe_zaehler < 4)
+	if (eingabe_zaehler < pin_len)
 	{
 		// Kennung für Eingabe anzeigen unter KeyPad
 		// ist fix Y wandert
@@ -80,10 +80,11 @@ void check_pin(uint8_t number)
 				i = pin_len + 1;			// force end, loopcount > mx
 			}
 		}
-		if 	(fails == false)
+		if 	(fails == false)				// pin was OK
 		{
 			BL_timer_active = false;
 			pinOk = true;
+			video_timer_start_time = millis();
 			lv_obj_t *scr = lv_scr_act();
 			lv_obj_clean(scr);				// Clear Screen
 

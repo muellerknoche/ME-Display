@@ -255,20 +255,11 @@ void setup()
 
 	// Init Display
 	lcd.begin();
-	// lcd.init(); 				//MK
-	// lcd.setBrightness(255);		//MK
-	// lcd.setColorDepth(16);		//MK
-	// lcd.setRotation(0);			//
-	// lcd.fillScreen(TFT_RED);
  	lcd.setTextSize(2);
-	
 	delay(200);
-
 	lv_init();
-
 	delay(100);
 	touch_init();
-
 	screenWidth = lcd.width();
 	screenHeight = lcd.height();
 
@@ -318,53 +309,67 @@ void setup()
 
 	// Setup WiFi
 	//-Create ESP32 as Access Point and start the server.
-	Serial.println();
-	Serial.println("Create ESP32 as Access Point and start the server.");
-	Serial.println("WIFI mode : AP");
+
+	#ifdef DEBUG
+		Serial.println();
+		Serial.println("Create ESP32 as Access Point and start the server.");
+		Serial.println("WIFI mode : AP");
+	#endif
+
 	WiFi.mode(WIFI_AP);
 
-	Serial.println();
-	Serial.println("Setting AP.");
-	WiFi.softAP(ssid, password);
+	#ifdef DEBUG
+		Serial.println();
+		Serial.println("Setting AP.");
+	#endif
+
+	WiFi.softAP(ssid, password);//
 	delay(500);
 	WiFi.softAPConfig(local_ip, gateway, subnet);
 
 	IPAddress IP = WiFi.softAPIP();
-	Serial.println();
-	Serial.print("AP IP Address : ");
-	Serial.println(IP);
+	#ifdef DEBUG
+		Serial.println();
+		Serial.print("AP IP Address : ");
+		Serial.println(IP);
+	#endif
 
 	server.listen(8888);
-	Serial.println();
-	Serial.print("Is server live ? ");
-	if (server.available())
-	{
-		Serial.println("yes");	/* code */
-	}
-	else
-	{
-		Serial.println("NO");
-	}
+
+	#ifdef DEBUG
+		Serial.println();
+		Serial.print("Is server live ? ");
+		if (server.available())
+		{
+			Serial.println("yes");	/* code */
+		}
+		else
+		{
+			Serial.println("NO");
+		}
 	
-	Serial.println(server.available());
-	Serial.println("-------------");
-	//----------------------------------------
-	Serial.println();
-	Serial.println("Waiting for connection from ESP32-CAM (Client).");
-
-
+		Serial.println(server.available());
+		Serial.println("-------------");
+		//----------------------------------------
+		Serial.println("Waiting for connection from ESP32-CAM (Client).");
+	#endif
+	jetzt = millis();
 	//print_msg("Waiting for CAM ...",500, 10);
 }	// End Setup
 
 void loop()
 {
-
+//	Serial.println("first");
 	if (first)				// only once here
 	{
 		Serial.println("IN LOOP");
 		first = false;		// block second message
 	}
-
+	if (pinOk)
+	{
+		client.send("V");		// tell client to send stream
+	}
+//	Serial.println("ftouch");
 	if (ftouch) 
 	{
 		ftouch = true; // ???????
@@ -372,12 +377,12 @@ void loop()
 		{
 			if (touch_touched())					// if display touched switch backlight on
 			{
-				backlight_OnOff(true);				// set BL On
+				backlight_On_Off(true);				// set BL On
 				if (!BL_timer_active)
 				{
 					BL_timer_start_time = millis();	// set startTime
 					BL_timer_active = true;			// start Timer
-					video_timer_active = false; 	// für all
+//					video_timer_active = false; 	// für alle Fälle
 				}
 				create_buttons(1);
 			}
@@ -386,6 +391,7 @@ void loop()
 	
 	//------------------------------------------------
 	// check if BL Timer is at end only if active
+//	Serial.println("BL_timer_active");
 	if (BL_timer_active)
 	{
 		if (my_timer(BL_timer_start_time, BL_timeout))		
@@ -394,63 +400,66 @@ void loop()
 				Serial.println("DisplayTimer end");
 			#endif
 			BL_timer_active = false;			
-			backlight_OnOff(false);
-			showVideo = false;
+			backlight_On_Off(false);
+//			showVideo = false;
 			//Clear everything
 		}
 	}
 	//---------------------------------------------------
+//	Serial.println("video_timer_active");
 	if (video_timer_active)
 	{
-		if (my_timer,(video_timer_start_time, video_timeout ))
+		if (my_timer(video_timer_start_time, video_timeout ))
 		{
-			#ifdef DEBUG
-				Serial.println("Video aus");
-			#endif
-			video_timer_active = false;
-			showVideo = false;
+			video_timer_active = false;				//reset timer 
+			showVideo = false;						//
+			backlight_On_Off(false);					// BL off
+			eingabe_zaehler = 0;					// reset
 		}
-}
+	}
 
 	// Start the Viodo and the Timer only once
+	Serial.println("pinOK && !pinOkSet");
 	if (pinOk && !pinOkSet)
 	{
+		Serial.println("ZZZZZZZZZ" );
 		// Start the Timer
-		video_timer_start_time = millis();
+		//video_timer_start_time = millis();		//passiert schon in keypad.h
 		video_timer_active = true;
+		backlight_On_Off(true);
 		pinOkSet = true;
 	}
-	//----------------------------------------------
-
-	// video timer auswerten 
-
-
-
-
-
-  	if(server.poll())
+	Serial.println("server.poll");
+	if(server.poll())
 	{
-    	client = server.accept();
+		auto client = server.accept();
   	}
 	
+	Serial.println("client.available");
   	if(client.available())
 	{
-    	client.poll();
-
-    	WebsocketsMessage msg = client.readBlocking();
-
-
-		if (pinOkSet)
-		{
+    	// client.poll();
+    	// WebsocketsMessage msg = client.readBlocking();
+		auto msg = client.readBlocking();
+//		if (pinOkSet)
+//		{
 			lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length()); // draws the JPEG on the screen
-		}
+//		}
+	}
 
+//	Serial.println("millis()");
+//	if (millis() > (jetzt + 10))
+//	{
+		lv_timer_handler(); /* let the GUI do its work */
+//		jetzt = millis();
+//		Serial.println("xxxxxxxxx");
+//	}
 
-
-  		//  Serial.println(msg.len());
-	}	
-
-	
-	lv_timer_handler(); /* let the GUI do its work */
-	delay( 10 );
+// 	int a = 0;
+// 	int b = 1;
+// 	while(a == b)
+// 	{
+// 		a = 1;
+// 	}
+// 	a--;
 }

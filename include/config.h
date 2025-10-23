@@ -31,6 +31,7 @@ unsigned long video_timeout = 30000;     // Zeit bis BL wieder aus
 bool pinOkSet = false;                  // Video und Timer nur einmal
 
 unsigned long now;
+unsigned long jetzt;
 
 int loopPosX = 500;
 int loopPosY = 350;
