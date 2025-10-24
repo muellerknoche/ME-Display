@@ -353,97 +353,100 @@ void setup()
 		//----------------------------------------
 		Serial.println("Waiting for connection from ESP32-CAM (Client).");
 	#endif
+	
+	digitalWrite(2, HIGH); 		// Display ein
+	create_buttons(1);			// keypad activ
 
 
-
-	jetzt = millis();
+//	jetzt = millis();
 	//print_msg("Waiting for CAM ...",500, 10);
 }	// End Setup
 
 void loop()
 {
-	while (!a_client)
-	{
-		Serial.println("wait client");
-		server.poll();
-		WebsocketsClient newClient = server.accept();
-		if (newClient.available())
-		{
-			a_client = true;
-		}
-	}
-	if (a_client)				// server. poll must run all the time 
-	{
-		server.poll();
-		Serial.println("client");
-	}
+	// while (!a_client)
+	// {
+	// 	Serial.println("wait client");
+	// 	server.poll();
+	// 	WebsocketsClient newClient = server.accept();
+	// 	if (newClient.available())
+	// 	{
+	// 		a_client = true;
+	// 	}
+	// }
+	// if (a_client)				// server. poll must run all the time 
+	// {
+	// 	server.poll();
+	// 	Serial.println("client");
+	// }
 
-	if (!pinOk)
-	{
-		if (ftouch) 
-		{
-			ftouch = true; // ???????
-			if (touch_has_signal())
-			{
-				if (touch_touched())					// if display touched switch backlight on
-				{
-					backlight_On_Off(true);				// set BL On
-					if (!BL_timer_active)
-					{
-						BL_timer_start_time = millis();	// set startTime
-						BL_timer_active = true;			// start Timer
-					}
-					if (no_buttons)
-					{
-						create_buttons(1);
-						no_buttons = false;
-					}  // end no_nuttons
-				} // end touched_touched
-			} // end touched_has_ignal
-		} // end ftouch
-		if (BL_timer_active)
-		{
-			if (my_timer(BL_timer_start_time, BL_timeout))		
-			{
-				BL_timer_active = false;			
-				backlight_On_Off(false);
-				eingabe_zaehler = 0; //	falls schon Taste gedrückt, eventuell Reset 
-			} // end BL timeout check
-		} // end if BL timer active
-	} // if !pinOK
-	else // pinOK
-	{
-		if (video_timer_active)
-		{
-			if (my_timer(video_timer_start_time, video_timeout ))
-			{
-				video_timer_active = false;				//reset timer 
-				showVideo = false;						//
-				backlight_On_Off(false);					// BL off
-				eingabe_zaehler = 0;					// reset
-			}
-		}
+	// if (!pinOk)
+	// {
+	// 	if (ftouch) 
+	// 	{
+	// 		ftouch = true; // ???????
+	// 		if (touch_has_signal())
+	// 		{
+	// 			if (touch_touched())					// if display touched switch backlight on
+	// 			{
+	// 				backlight_On_Off(true);				// set BL On
+	// 				if (!BL_timer_active)
+	// 				{
+	// 					BL_timer_start_time = millis();	// set startTime
+	// 					BL_timer_active = true;			// start Timer
+	// 				}
+	// 				if (no_buttons)
+	// 				{
+	// 					create_buttons(1);
+	// 					no_buttons = false;
+	// 				}  // end no_nuttons
+	// 			} // end touched_touched
+	// 		} // end touched_has_ignal
+	// 	} // end ftouch
+	// 	if (BL_timer_active)
+	// 	{
+	// 		if (my_timer(BL_timer_start_time, BL_timeout))		
+	// 		{
+	// 			BL_timer_active = false;			
+	// 			backlight_On_Off(false);
+	// 			eingabe_zaehler = 0; //	falls schon Taste gedrückt, eventuell Reset 
+	// 		} // end BL timeout check
+	// 	} // end if BL timer active
+	// } // if !pinOK
+	// else // pinOK
+	// {
+	// 	if (video_timer_active)
+	// 	{
+	// 		if (my_timer(video_timer_start_time, video_timeout ))
+	// 		{
+	// 			video_timer_active = false;				//reset timer 
+	// 			showVideo = false;						//
+	// 			backlight_On_Off(false);					// BL off
+	// 			eingabe_zaehler = 0;					// reset
+	// 		}
+	// 	}
 
-		// Start the Viodo and the Timer only once
-		// Hier nur wenn pinOK;
-		if (!pinOkSet)
-		{
-			Serial.println("ZZZZZZZZZ" );
-			// Start the Timer
-			//video_timer_start_time = millis();		//passiert schon in keypad.h
-			video_timer_active = true;
-			backlight_On_Off(true);
-			pinOkSet = true;							// block a second time here
-		}
-		if(a_client && pinOkSet)
-		{
-			Serial.println("!===================================");
-			// client.poll();
-			// WebsocketsMessage msg = client.readBlocking();
-			auto msg = client.readBlocking();
-			lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length()); // draws the JPEG on the screen
-		}
-	}
-	Serial.println("lv_timer");
+	// 	// Start the Viodo and the Timer only once
+	// 	// Hier nur wenn pinOK;
+	// 	if (!pinOkSet)
+	// 	{
+	// 		Serial.println("ZZZZZZZZZ" );
+	// 		// Start the Timer
+	// 		//video_timer_start_time = millis();		//passiert schon in keypad.h
+	// 		video_timer_active = true;
+	// 		backlight_On_Off(true);
+	// 		pinOkSet = true;							// block a second time here
+	// 	}
+	// 	if(a_client && pinOkSet)
+	// 	{
+	// 		Serial.println("!===================================");
+	// 		// client.poll();
+	// 		// WebsocketsMessage msg = client.readBlocking();
+	// 		auto msg = client.readBlocking();
+	// 		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length()); // draws the JPEG on the screen
+	// 	}
+	// }
+	// Serial.println("lv_timer");
 	lv_timer_handler(); /* let the GUI do its work */
+	delay(10);
 }
