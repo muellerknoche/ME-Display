@@ -20,6 +20,7 @@ int incode[4];
 bool first = true;
 bool ftouch = true;
 bool no_buttons = true;
+bool a_client = false;
 
 // fuer Display dunkel wenn nicht betaetigt
 unsigned long BL_timer_start_time;             //Stratzeit wird bei jedem Tastendruck verlaengert

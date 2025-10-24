@@ -353,12 +353,31 @@ void setup()
 		//----------------------------------------
 		Serial.println("Waiting for connection from ESP32-CAM (Client).");
 	#endif
+
+
+
 	jetzt = millis();
 	//print_msg("Waiting for CAM ...",500, 10);
 }	// End Setup
 
 void loop()
 {
+	while (!a_client)
+	{
+		Serial.println("wait client");
+		server.poll();
+		WebsocketsClient newClient = server.accept();
+		if (newClient.available())
+		{
+			a_client = true;
+		}
+	}
+	if (a_client)				// server. poll must run all the time 
+	{
+		server.poll();
+		Serial.println("client");
+	}
+
 	if (!pinOk)
 	{
 		if (ftouch) 
@@ -416,22 +435,15 @@ void loop()
 			backlight_On_Off(true);
 			pinOkSet = true;							// block a second time here
 		}
-		// ab hier ??
-		if(server.poll())
+		if(a_client && pinOkSet)
 		{
-			auto client = server.accept();
-		}
-	
-		if(client.available())
-		{
+			Serial.println("!===================================");
 			// client.poll();
 			// WebsocketsMessage msg = client.readBlocking();
 			auto msg = client.readBlocking();
-			if (pinOkSet)
-			{
-				lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length()); // draws the JPEG on the screen
-			}
+			lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length()); // draws the JPEG on the screen
 		}
 	}
+	Serial.println("lv_timer");
 	lv_timer_handler(); /* let the GUI do its work */
 }
