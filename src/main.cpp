@@ -20,6 +20,9 @@
 // #include <stdio.h>
 #include <LovyanGFX.hpp>
 #include <TAMC_GT911.h>
+#include <lvgl.h>
+// #iclude <wire.h>
+// #include "esp_psram.h"
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 #include <ArduinoWebsockets.h>
@@ -37,8 +40,7 @@
 #define TFT_BL 2
 
 
-class LGFX : public lgfx::LGFX_Device
-{
+class LGFX : public lgfx::LGFX_Device {
 public:
 
 lgfx::Bus_RGB    	_bus_instance;
@@ -212,11 +214,11 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 			data->point.y = touch_last_y;
 
 			//#ifdef DEBUG
-				Serial.println(millis());
-				Serial.print( "Data x :" );
-				Serial.println( touch_last_x );
-				Serial.print( "Data y :" );
-				Serial.println( touch_last_y );
+				Serial.print("touched ");  Serial.println(millis());
+			//	Serial.print( "Data x :" );
+			//	Serial.println( touch_last_x );
+			//	Serial.print( "Data y :" );
+			//	Serial.println( touch_last_y );
 			//#endif
 
 		}
@@ -229,7 +231,7 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	{
 		data->state = LV_INDEV_STATE_REL;
 	}
-	delay(15);
+	//delay(15);
 } // END my_touchpad_read
 
 //lv_obj_t * my_disp;
@@ -241,7 +243,14 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	// has to be outside any function
 	using namespace websockets;
 	WebsocketsServer server;
+
 	WebsocketsClient client;
+
+
+	hw_timer_t *timer = NULL;
+	void IRAM_ATTR onTimer(){
+		digitalWrite(2, LOW);
+	}
 
 
 void setup()
@@ -356,6 +365,12 @@ void setup()
 	
 	digitalWrite(2, HIGH); 		// Display ein
 	create_buttons(1);			// keypad activ
+	no_buttons = false;
+
+	timer = timerBegin(0, 80, true);
+	timerAttachInterrupt(timer, &onTimer, true);
+	timerAlarmWrite(timer, 30000000,false);
+	timerAlarmEnable(timer);
 
 
 //	jetzt = millis();
@@ -382,27 +397,31 @@ void loop()
 
 	// if (!pinOk)
 	// {
-	// 	if (ftouch) 
-	// 	{
-	// 		ftouch = true; // ???????
-	// 		if (touch_has_signal())
-	// 		{
-	// 			if (touch_touched())					// if display touched switch backlight on
-	// 			{
-	// 				backlight_On_Off(true);				// set BL On
-	// 				if (!BL_timer_active)
-	// 				{
-	// 					BL_timer_start_time = millis();	// set startTime
-	// 					BL_timer_active = true;			// start Timer
-	// 				}
-	// 				if (no_buttons)
-	// 				{
-	// 					create_buttons(1);
-	// 					no_buttons = false;
-	// 				}  // end no_nuttons
-	// 			} // end touched_touched
-	// 		} // end touched_has_ignal
-	// 	} // end ftouch
+
+			// now1 = millis();
+			// if (ftouch && !no_buttons) 
+	 		// {
+	 		// 	// is always truw as I foun but seams to be needed ftouch = true; // ???????
+	 		// 	if (touch_has_signal())
+	 		// 	{
+	 		// 		if (touch_touched())					// if display touched switch backlight on
+	 		// 		{
+	 		// 			backlight_On_Off(true);				// set BL On
+	 		// 			if (!BL_timer_active)
+	 		// 			{
+	 		// 				BL_timer_start_time = millis();	// set startTime
+	 		// 				BL_timer_active = true;			// start Timer
+	 		// 			}
+	 		// 			if (no_buttons)						// true on Start
+	 		// 			{
+			// 				Serial.println("make Buttons");
+	 		// 				create_buttons(1);				// create keypad
+	 		// 				no_buttons = false;				// set to false 
+	 		// 			}  // end no_buttons
+	 		// 		} // end touched_touched
+	 		// 	} // end touched_has_ignal
+	 		// } // end ftouch
+
 	// 	if (BL_timer_active)
 	// 	{
 	// 		if (my_timer(BL_timer_start_time, BL_timeout))		
@@ -449,4 +468,5 @@ void loop()
 	// Serial.println("lv_timer");
 	lv_timer_handler(); /* let the GUI do its work */
 	delay(10);
+	// now2 = millis();
 }

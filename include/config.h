@@ -38,7 +38,9 @@ unsigned long jetzt;
 int loopPosX = 500;
 int loopPosY = 350;
 
-
-
+unsigned long now1; 
+unsigned long now2;
+unsigned long now3;
+unsigned long now4;
 
 #endif

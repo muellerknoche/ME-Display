@@ -22,8 +22,9 @@ int sizeY = 90;
 // prueft nach Eingabe der PIN Laenge auf Gueltigkeit
 void check_pin(uint8_t number)
 {
-	BL_timer_start_time = millis();					// Ausschalten des Bildschirms verhindern
-	bool fails = false;								// default OK
+	timerRestart(timer); 		// Reset counter to 0
+  	timerWrite(timer, 0);		// Ausschalten des Bildschirms verhindern
+	bool fails = false;			// default OK
 
 	#ifdef DEBUG
 		Serial.print("START ");
@@ -105,6 +106,8 @@ void check_pin(uint8_t number)
 			
 		}
 	}
+	Serial.print("end check pin ");  Serial.println(millis());
+	Serial .print(now1); Serial.print(" "); Serial.println(now2);
 }  // End check PIN
 
 
@@ -120,7 +123,7 @@ static void eins_event(lv_event_t * e)
     	// lv_label_set_text(eins_txt, "*1");
 		// lv_obj_set_style_text_font(eins_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		
-		Serial.println("1 pressed");
+		//Serial.println("1 pressed");
 		check_pin(1);
 	}
 }
