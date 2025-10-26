@@ -5,17 +5,21 @@
  * ESP32-CAM_to_ESP32 Software found on the net streaming from CAM to TFT
  * @date startet in August 2025
  * @date now 20. Okt. 2025 nearly finished
+ * @data 23. Oct, 2025 SD card rein timer Integration ??
  * 
  */
 
 #include <Arduino.h>
 
-//#define DEBUG				// comment for final
+#define DEBUG				// comment for final
+#include <config.h>
+#include <WiFi.h>       	// For WiFi AP
+#include <SD.h>         	// SD card library
+#include <SPI.h>        	// SPI for SD
+
 
 #include <lvgl.h>
 #include <FS.h>
-#include <SD.h>
-#include <SPI.h>
 // #include <Adafruit_GFX.h>
 // #include <stdio.h>
 #include <LovyanGFX.hpp>
@@ -26,19 +30,78 @@
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 #include <ArduinoWebsockets.h>
-#include <WiFi.h>
-#include <config.h>
 #include <my_tools.h>
+#include <config.h>
 
-#define SD_MOSI 11
-#define SD_MISO 13
-#define SD_SCK 12
-#define SD_CS 10
 
 //SPIClass SD_SPI;
 
 #define TFT_BL 2
 
+// === First get Config from SD Card ====
+
+// Function to trim whitespace from strings
+String trim(String str)
+{
+  	str.trim();
+  	return str;
+}
+
+// Function to read and parse config from SD
+bool loadConfigFromSD()
+{
+	if (!SD.begin(csPin))
+	{
+    	Serial.println("SD card mount failed");
+    	return false;
+  	}
+  	Serial.println("SD card mounted");
+
+
+  File file = SD.open("/config.txt");
+  if (!file) {
+    Serial.println("Failed to open /config.txt");
+    return false;
+  }
+
+  while (file.available()) {
+    String line = file.readStringUntil('\n');
+
+	Serial.println(line);
+
+    line = trim(line);
+    if (line.length() == 0 || line.startsWith("#")) continue;  // Skip empty or comments
+
+    int eqIndex = line.indexOf('=');
+    if (eqIndex == -1) continue;  // Invalid line
+
+    String key = trim(line.substring(0, eqIndex));
+    String value = trim(line.substring(eqIndex + 1));
+
+	if (key == "ssid") ssid = value;
+    else if (key == "password") password = value;
+    else if (key == "ip") localIP.fromString(value);
+    else if (key == "gateway") gateway.fromString(value);
+    else if (key == "subnet") subnet.fromString(value);
+    else if (key == "pin") pin = value;
+    else if (key == "laenge") laenge = value;
+  }
+  file.close();
+
+  // Validate if all were loaded
+  if (pin.isEmpty() || laenge.isEmpty() || ssid.isEmpty() || password.isEmpty() || localIP == IPAddress(0,0,0,0) ||
+      gateway == IPAddress(0,0,0,0) || subnet == IPAddress(0,0,0,0) || password.isEmpty()) {
+    Serial.println("Incomplete config, using defaults");
+    return false;
+  }
+
+  Serial.println("Config loaded: SSID=" + ssid + ", IP=" + localIP.toString());
+  Serial.println(pin);
+  Serial.println(laenge);
+  return true;
+}
+
+// === SD Card END ===
 
 class LGFX : public lgfx::LGFX_Device {
 public:
@@ -149,10 +212,6 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 
 } // END my_disp_flush
 
-// fuer PIN check
-// Hinterlegte PIN später von SD CARD
-uint8_t code_fix[4] = {1,1,1,1};
-
 /**
  * @brief Anzeige einer Nachricht an Pos X,Y. 0,0 ist Display rechts oben. 
  * @note Achtung Display wird Portrait eingebaut ist aber Landscape orientiert.
@@ -258,6 +317,33 @@ void setup()
 	Serial.begin(115200);			// Start Serial
 	while(!Serial){delay(100);}
 
+	// Load config or use defaults
+  if (!loadConfigFromSD()) {
+    ssid = defaultSSID;
+    password = defaultPassword;
+    localIP = defaultIP;
+    gateway = defaultGateway;
+    subnet = defaultSubnet;
+  }
+
+  	// Start AP mode
+  	WiFi.mode(WIFI_AP);
+  	WiFi.softAP(ssid.c_str(), password.c_str());
+  	Serial.println("AP started with SSID: " + ssid);
+  	delay(100);  // Brief delay for AP init
+
+  	// Configure IP settings
+  	if (!WiFi.softAPConfig(localIP, gateway, subnet))
+  	{
+    	Serial.println("AP config failed");
+  	} else {
+    	Serial.println("AP config successful");
+  	}
+
+  	// Print AP IP
+  	Serial.print("AP IP address: ");
+  	Serial.println(WiFi.softAPIP());
+
 	pinMode(TFT_BL, OUTPUT);		// Backlight Control
 
 	Wire.begin(19, 20);
@@ -301,47 +387,12 @@ void setup()
 
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
 
-	// COMMENT for now !!!!!!create_buttons(0)!!!!!!!!;
-
-	// from SD later
-	// fuer WiFi
-	const char* ssid = "ESP32CAM_to_ESP32"; //--> access point name.
-	const char* password = "myesp32server"; //--> access point password.
-	// Use this IP address (local_ip) in the ESP32-CAM (client) program code.
-	// Use it in the "websockets_server_host" variable.
-	IPAddress local_ip(192,168,1,1);
-
-	IPAddress gateway(192,168,1,1);
-	IPAddress subnet(255,255,255,0);
-	//-----------------------------------
-	// end from SD
-
-	// Setup WiFi
-	//-Create ESP32 as Access Point and start the server.
-
 	#ifdef DEBUG
 		Serial.println();
 		Serial.println("Create ESP32 as Access Point and start the server.");
 		Serial.println("WIFI mode : AP");
 	#endif
 
-	WiFi.mode(WIFI_AP);
-
-	#ifdef DEBUG
-		Serial.println();
-		Serial.println("Setting AP.");
-	#endif
-
-	WiFi.softAP(ssid, password);//
-	delay(500);
-	WiFi.softAPConfig(local_ip, gateway, subnet);
-
-	IPAddress IP = WiFi.softAPIP();
-	#ifdef DEBUG
-		Serial.println();
-		Serial.print("AP IP Address : ");
-		Serial.println(IP);
-	#endif
 
 	server.listen(8888);
 
@@ -363,6 +414,8 @@ void setup()
 		Serial.println("Waiting for connection from ESP32-CAM (Client).");
 	#endif
 	
+
+	// Just for Test
 	digitalWrite(2, HIGH); 		// Display ein
 	create_buttons(1);			// keypad activ
 	no_buttons = false;

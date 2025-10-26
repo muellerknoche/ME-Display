@@ -22,8 +22,9 @@ int sizeY = 90;
 // prueft nach Eingabe der PIN Laenge auf Gueltigkeit
 void check_pin(uint8_t number)
 {
-	timerRestart(timer); 		// Reset counter to 0
-  	timerWrite(timer, 0);		// Ausschalten des Bildschirms verhindern
+	
+	//timerRestart(timer); 		// Reset counter to 0
+  	//timerWrite(timer, 0);		// Ausschalten des Bildschirms verhindern
 	bool fails = false;			// default OK
 
 	#ifdef DEBUG
@@ -46,7 +47,7 @@ void check_pin(uint8_t number)
 		#endif
 
 		incode[eingabe_zaehler] = number;		// Eingabe speichern
-		eingabe_zaehler ++;
+		eingabe_zaehler++;
 
 		#ifdef DEBUG
 			Serial.print(millis());
@@ -67,10 +68,10 @@ void check_pin(uint8_t number)
 			#ifdef DEBUG
 				Serial.print("LOOP i: "); Serial.print(i);
 				Serial.print(" INCODE: "); Serial.print(incode[i]);
-				Serial.print(" code_fix: ");Serial.println(code_fix[i]);
+				Serial.print(" code_fix: ");//Serial.println(code_fix[i]);
 			#endif
 
-			if (code_fix[i] != incode[i])
+			if (pin[i] != incode[i])
 			{
 
 				#ifdef DEBUG
