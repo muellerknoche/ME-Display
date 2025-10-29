@@ -387,6 +387,21 @@ void loop()
 		
 
 	// 	// Start the Viodo and the Timer only once
+if (server.poll())
+  {
+    client = server.accept();
+  }
+
+  if (client.available())
+  {
+    client.poll();
+
+    WebsocketsMessage msg = client.readBlocking();
+
+	lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,150);  // it is from the LovyanGFX library  and works  fine
+}
+ 
+
 
 
 
