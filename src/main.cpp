@@ -380,10 +380,8 @@ void setup()
 	lv_disp_drv_t disp_drv;
     // ... initialize disp_drv ...
     //disp_drv.rotated = LV_DISP_ROT_90;
-
 	
 	lv_timer_handler();
-
 
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
 
