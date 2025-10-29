@@ -12,11 +12,12 @@
 #include <Arduino.h>
 
 #define DEBUG				// comment for final
+
 #include <config.h>
 #include <WiFi.h>       	// For WiFi AP
 #include <SD.h>         	// SD card library
 #include <SPI.h>        	// SPI for SD
-
+#include <sd_card.h>		// get data from SD
 
 #include <lvgl.h>
 #include <FS.h>
@@ -252,17 +253,18 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 
 void setup()
 {
-	Serial.begin(115200);			// Start Serial
-	while(!Serial){delay(100);}
+	 Serial.begin(115200);			// Start Serial
+	 while(!Serial){delay(100);}
+
+
+	// Serial.println("START SERIAL");
 
 	// Load config or use defaults
-  if (!loadConfigFromSD()) {
-    ssid = defaultSSID;
-    password = defaultPassword;
-    localIP = defaultIP;
-    gateway = defaultGateway;
-    subnet = defaultSubnet;
-  }
+  	if (!loadConfigFromSD())
+	{
+		//ssid = defaultSSID;	password = defaultPassword;	localIP = defaultIP;	gateway = defaultGateway;	subnet = defaultSubnet;
+		//pin = defaultPin;	laenge = defaultLaenge;
+	}
 
   	// Start AP mode
   	WiFi.mode(WIFI_AP);
@@ -284,8 +286,6 @@ void setup()
 
 	pinMode(TFT_BL, OUTPUT);		// Backlight Control
 
-	Wire.begin(19, 20);
-
 	// Init Display
 	lcd.begin();
  	lcd.setTextSize(2);
@@ -303,7 +303,7 @@ void setup()
 	/* Change the following line to your display resolution */
 	disp_drv.hor_res = screenWidth;
 	disp_drv.ver_res = screenHeight;
-	disp_drv.flush_cb = my_disp_flush;
+	disp_drv.flush_cb = my_disp_flush;						// touch callback
 	disp_drv.draw_buf = &draw_buf;
 
 	lv_disp_drv_register(&disp_drv);

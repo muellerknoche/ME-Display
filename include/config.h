@@ -44,7 +44,7 @@ uint8_t eingabe_zaehler = 0;        // digits entered
 int reference_code[4];              // to be filled from SD 
 uint8_t pin_len;                    // to befilled from SD
 // Array enthaelt eingegebene PIN
-int incode[4];                      // storage for enter digits
+int in_code[4];                      // storage for enter digits
 
 // === more flags ====
 bool touched = false;               // screen touched

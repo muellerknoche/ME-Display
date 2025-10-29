@@ -28,7 +28,6 @@ void check_pin(uint8_t number)
 	bool fails = false;			// default OK
 
 	#ifdef DEBUG
-		Serial.print("START "); Serial.println(millis()); 
 		Serial.print("Eingabezaehler: ");				// zaehlt eingegeben Zeichen
 		Serial.println(eingabe_zaehler);
 	#endif
@@ -45,22 +44,12 @@ void check_pin(uint8_t number)
 			Serial.println(number);
 		#endif
 
-		incode[eingabe_zaehler] = number;		// Eingabe speichern
+		in_code[eingabe_zaehler] = number;		// Eingabe speichern
 		eingabe_zaehler++;
-
-		#ifdef DEBUG
-			Serial.print(millis());
-			Serial.println(" END");
-		#endif
-
 	}
 
 	if (eingabe_zaehler == pin_len)
 	{
-//		Serial.println("START CHECK >>>>>>:");
-//		print_msg("           ",600,100);
-//		//print_msg("Start Check",600,100);
-		
 		for (uint8_t i = 0;i < pin_len; i++)
 		{
 
@@ -69,7 +58,7 @@ void check_pin(uint8_t number)
 				Serial.print(" REFERENCE_CODE: "); Serial.println(reference_code[i]);
 			#endif
 
-			if (pin[i] != incode[i])
+			if (reference_code[i] != in_code[i])
 			{
 
 				#ifdef DEBUG
@@ -99,9 +88,6 @@ void check_pin(uint8_t number)
 			lv_obj_t * scr = lv_scr_act();
 			lv_obj_clean(scr);
 //			lv_obj_set_style_bg_color(scr,lv_palette_main(LV_PALETTE_RED),LV_PART_MAIN);
-
-			//print_msg("FEHLER",430,180,1);
-			
 		}
 	}
 }  // End check PIN
