@@ -28,8 +28,7 @@ void check_pin(uint8_t number)
 	bool fails = false;			// default OK
 
 	#ifdef DEBUG
-		Serial.print("START ");
-		Serial.println(millis()); 
+		Serial.print("START "); Serial.println(millis()); 
 		Serial.print("Eingabezaehler: ");				// zaehlt eingegeben Zeichen
 		Serial.println(eingabe_zaehler);
 	#endif
@@ -56,19 +55,18 @@ void check_pin(uint8_t number)
 
 	}
 
-	if (eingabe_zaehler == 4)
+	if (eingabe_zaehler == pin_len)
 	{
 //		Serial.println("START CHECK >>>>>>:");
 //		print_msg("           ",600,100);
 //		//print_msg("Start Check",600,100);
-		uint8_t i = 0;
+		
 		for (uint8_t i = 0;i < pin_len; i++)
 		{
 
 			#ifdef DEBUG
-				Serial.print("LOOP i: "); Serial.print(i);
-				Serial.print(" INCODE: "); Serial.print(incode[i]);
-				Serial.print(" code_fix: ");//Serial.println(code_fix[i]);
+				Serial.print("LOOP i: "); Serial.print(i); 	Serial.print(" IN_CODE: "); Serial.print(in_code[i]);
+				Serial.print(" REFERENCE_CODE: "); Serial.println(reference_code[i]);
 			#endif
 
 			if (pin[i] != incode[i])
@@ -84,9 +82,8 @@ void check_pin(uint8_t number)
 		}
 		if 	(fails == false)				// pin was OK
 		{
-			BL_timer_active = false;
 			pinOk = true;
-			video_timer_start_time = millis();
+
 			lv_obj_t *scr = lv_scr_act();
 			lv_obj_clean(scr);				// Clear Screen
 
@@ -107,8 +104,6 @@ void check_pin(uint8_t number)
 			
 		}
 	}
-	Serial.print("end check pin ");  Serial.println(millis());
-	Serial .print(now1); Serial.print(" "); Serial.println(now2);
 }  // End check PIN
 
 

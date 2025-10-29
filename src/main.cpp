@@ -38,70 +38,6 @@
 
 #define TFT_BL 2
 
-// === First get Config from SD Card ====
-
-// Function to trim whitespace from strings
-String trim(String str)
-{
-  	str.trim();
-  	return str;
-}
-
-// Function to read and parse config from SD
-bool loadConfigFromSD()
-{
-	if (!SD.begin(csPin))
-	{
-    	Serial.println("SD card mount failed");
-    	return false;
-  	}
-  	Serial.println("SD card mounted");
-
-
-  File file = SD.open("/config.txt");
-  if (!file) {
-    Serial.println("Failed to open /config.txt");
-    return false;
-  }
-
-  while (file.available()) {
-    String line = file.readStringUntil('\n');
-
-	Serial.println(line);
-
-    line = trim(line);
-    if (line.length() == 0 || line.startsWith("#")) continue;  // Skip empty or comments
-
-    int eqIndex = line.indexOf('=');
-    if (eqIndex == -1) continue;  // Invalid line
-
-    String key = trim(line.substring(0, eqIndex));
-    String value = trim(line.substring(eqIndex + 1));
-
-	if (key == "ssid") ssid = value;
-    else if (key == "password") password = value;
-    else if (key == "ip") localIP.fromString(value);
-    else if (key == "gateway") gateway.fromString(value);
-    else if (key == "subnet") subnet.fromString(value);
-    else if (key == "pin") pin = value;
-    else if (key == "laenge") laenge = value;
-  }
-  file.close();
-
-  // Validate if all were loaded
-  if (pin.isEmpty() || laenge.isEmpty() || ssid.isEmpty() || password.isEmpty() || localIP == IPAddress(0,0,0,0) ||
-      gateway == IPAddress(0,0,0,0) || subnet == IPAddress(0,0,0,0) || password.isEmpty()) {
-    Serial.println("Incomplete config, using defaults");
-    return false;
-  }
-
-  Serial.println("Config loaded: SSID=" + ssid + ", IP=" + localIP.toString());
-  Serial.println(pin);
-  Serial.println(laenge);
-  return true;
-}
-
-// === SD Card END ===
 
 class LGFX : public lgfx::LGFX_Device {
 public:
@@ -267,6 +203,8 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	{
 		if (touch_touched())
 		{
+			touched = true;					// indicate for loop
+
 			data->state = LV_INDEV_STATE_PR;
 			/*Set the coordinates*/
 			data->point.x = touch_last_x;
@@ -274,10 +212,10 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 
 			//#ifdef DEBUG
 				Serial.print("touched ");  Serial.println(millis());
-			//	Serial.print( "Data x :" );
-			//	Serial.println( touch_last_x );
-			//	Serial.print( "Data y :" );
-			//	Serial.println( touch_last_y );
+				Serial.print( "Data x :" );
+				Serial.println( touch_last_x );
+				Serial.print( "Data y :" );
+				Serial.println( touch_last_y );
 			//#endif
 
 		}
@@ -413,15 +351,15 @@ void setup()
 	#endif
 	
 
-	// Just for Test
-	digitalWrite(2, HIGH); 		// Display ein
-	create_buttons(1);			// keypad activ
-	no_buttons = false;
+	// // Just for Test
+	// digitalWrite(2, HIGH); 		// Display ein
+	// create_buttons(1);			// keypad activ
+	// no_buttons = false;
 
-	timer = timerBegin(0, 80, true);
-	timerAttachInterrupt(timer, &onTimer, true);
-	timerAlarmWrite(timer, 30000000,false);
-	timerAlarmEnable(timer);
+	// timer = timerBegin(0, 80, true);
+	// timerAttachInterrupt(timer, &onTimer, true);
+	// timerAlarmWrite(timer, 30000000,false);
+	// timerAlarmEnable(timer);
 
 
 //	jetzt = millis();
@@ -430,93 +368,34 @@ void setup()
 
 void loop()
 {
-	// while (!a_client)
-	// {
-	// 	Serial.println("wait client");
-	// 	server.poll();
-	// 	WebsocketsClient newClient = server.accept();
-	// 	if (newClient.available())
-	// 	{
-	// 		a_client = true;
-	// 	}
-	// }
-	// if (a_client)				// server. poll must run all the time 
-	// {
-	// 	server.poll();
-	// 	Serial.println("client");
-	// }
+	if (touched)														// touch dedected BL on make keypad
+	{
+		touched = false;
+		digitalWrite(2, HIGH); 										// BLy ein
+		create_buttons(1);											// keypad activ
+		no_buttons = false;											// set flag keypad on
+
+		// timer Off while test
+		// timer = timerBegin(0, 80, true);
+		// timerAttachInterrupt(timer, &onTimer, true);
+		// timerAlarmWrite(timer, 30000000,false);
+		// timerAlarmEnable(timer);
+	}
 
 	// if (!pinOk)
-	// {
-
-			// now1 = millis();
-			// if (ftouch && !no_buttons) 
-	 		// {
-	 		// 	// is always truw as I foun but seams to be needed ftouch = true; // ???????
-	 		// 	if (touch_has_signal())
-	 		// 	{
-	 		// 		if (touch_touched())					// if display touched switch backlight on
-	 		// 		{
-	 		// 			backlight_On_Off(true);				// set BL On
-	 		// 			if (!BL_timer_active)
-	 		// 			{
-	 		// 				BL_timer_start_time = millis();	// set startTime
-	 		// 				BL_timer_active = true;			// start Timer
-	 		// 			}
-	 		// 			if (no_buttons)						// true on Start
-	 		// 			{
-			// 				Serial.println("make Buttons");
-	 		// 				create_buttons(1);				// create keypad
-	 		// 				no_buttons = false;				// set to false 
-	 		// 			}  // end no_buttons
-	 		// 		} // end touched_touched
-	 		// 	} // end touched_has_ignal
-	 		// } // end ftouch
-
-	// 	if (BL_timer_active)
-	// 	{
-	// 		if (my_timer(BL_timer_start_time, BL_timeout))		
-	// 		{
-	// 			BL_timer_active = false;			
-	// 			backlight_On_Off(false);
-	// 			eingabe_zaehler = 0; //	falls schon Taste gedrückt, eventuell Reset 
-	// 		} // end BL timeout check
-	// 	} // end if BL timer active
-	// } // if !pinOK
-	// else // pinOK
-	// {
-	// 	if (video_timer_active)
-	// 	{
-	// 		if (my_timer(video_timer_start_time, video_timeout ))
-	// 		{
-	// 			video_timer_active = false;				//reset timer 
-	// 			showVideo = false;						//
-	// 			backlight_On_Off(false);					// BL off
-	// 			eingabe_zaehler = 0;					// reset
-	// 		}
-	// 	}
+	//	{}
+		
 
 	// 	// Start the Viodo and the Timer only once
-	// 	// Hier nur wenn pinOK;
-	// 	if (!pinOkSet)
-	// 	{
-	// 		Serial.println("ZZZZZZZZZ" );
-	// 		// Start the Timer
-	// 		//video_timer_start_time = millis();		//passiert schon in keypad.h
-	// 		video_timer_active = true;
-	// 		backlight_On_Off(true);
-	// 		pinOkSet = true;							// block a second time here
-	// 	}
-	// 	if(a_client && pinOkSet)
-	// 	{
-	// 		Serial.println("!===================================");
-	// 		// client.poll();
+
+
+
 	// 		// WebsocketsMessage msg = client.readBlocking();
-	// 		auto msg = client.readBlocking();
-	// 		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length()); // draws the JPEG on the screen
-	// 	}
-	// }
-	// Serial.println("lv_timer");
+	 		auto msg = client.readBlocking();
+	 		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length()); // draws the JPEG on the screen
+	
+	
+	
 	lv_timer_handler(); /* let the GUI do its work */
 	delay(10);
 	// now2 = millis();
