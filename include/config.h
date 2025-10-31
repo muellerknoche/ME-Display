@@ -1,5 +1,5 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef _CONFIG_H_
+#define _CONFIG_H_
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -49,7 +49,7 @@ int in_code[4];                      // storage for enter digits
 // === more flags ====
 bool touched = false;               // screen touched
 bool no_buttons = true;             // keypad not initialized
-
+bool video;
 bool pinOkSet = false;              // Video und Timer nur einmal
 
 unsigned long now;
@@ -57,4 +57,4 @@ unsigned long now;
 int loopPosX = 500;
 int loopPosY = 350;
 
-#endif // CONFIG_H
+#endif // _CONFIG_H_

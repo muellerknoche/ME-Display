@@ -1,8 +1,10 @@
 #ifndef KEYPAD_H
 #define KEYPAD_H
 
+
 #include <lvgl.h>
 #include <config.h>
+#include <main.h>
 
 #define TFT_Bl 2
 // Konstanten für Tastenposition
@@ -22,9 +24,7 @@ int sizeY = 90;
 // prueft nach Eingabe der PIN Laenge auf Gueltigkeit
 void check_pin(uint8_t number)
 {
-	
-	//timerRestart(timer); 		// Reset counter to 0
-  	//timerWrite(timer, 0);		// Ausschalten des Bildschirms verhindern
+	reStartTimer();
 	bool fails = false;			// default OK
 
 	#ifdef DEBUG
@@ -37,7 +37,8 @@ void check_pin(uint8_t number)
 	{
 		// Kennung für Eingabe anzeigen unter KeyPad
 		// ist fix Y wandert
-		print_msg( "*",loopPosX, loopPosY - (100 * eingabe_zaehler),1);
+	 	//char* star = "*";
+		//print_msg(star,loopPosX, loopPosY - (100 * eingabe_zaehler),1);
 
 		#ifdef DEBUG
 			Serial.print("number: ");

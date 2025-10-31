@@ -6,13 +6,15 @@
  * @date startet in August 2025
  * @date now 20. Okt. 2025 nearly finished
  * @data 23. Oct, 2025 SD card rein timer Integration ??
- * 
+ * @note neuer branch am 29.10.2025
+ * @date weiter 30.10.2025
  */
 
 #include <Arduino.h>
 
 #define DEBUG				// comment for final
 
+#include <main.h>
 #include <config.h>
 #include <WiFi.h>       	// For WiFi AP
 #include <SD.h>         	// SD card library
@@ -33,6 +35,28 @@
 #include <ArduinoWebsockets.h>
 #include <my_tools.h>
 #include <config.h>
+
+	hw_timer_t *timer = NULL;
+	
+	void IRAM_ATTR onTimer()
+	{
+		delay(100);
+		ESP.restart();
+	}
+
+void startTimer()
+{
+	timer = timerBegin(0, 80, true);
+	timerAttachInterrupt(timer, &onTimer, true);
+	timerAlarmWrite(timer, 30000000,false);
+	timerAlarmEnable(timer);
+
+}
+
+void reStartTimer()
+{
+	timerRestart(timer);
+}
 
 
 //SPIClass SD_SPI;
@@ -146,6 +170,7 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 #endif
 
 	lv_disp_flush_ready(disp);
+	 
 
 } // END my_disp_flush
 
@@ -243,12 +268,6 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	WebsocketsServer server;
 
 	WebsocketsClient client;
-
-
-	hw_timer_t *timer = NULL;
-	void IRAM_ATTR onTimer(){
-		digitalWrite(2, LOW);
-	}
 
 
 void setup()
@@ -349,42 +368,20 @@ void setup()
 		//----------------------------------------
 		Serial.println("Waiting for connection from ESP32-CAM (Client).");
 	#endif
-	
 
-	// // Just for Test
-	// digitalWrite(2, HIGH); 		// Display ein
-	// create_buttons(1);			// keypad activ
-	// no_buttons = false;
-
-	// timer = timerBegin(0, 80, true);
-	// timerAttachInterrupt(timer, &onTimer, true);
-	// timerAlarmWrite(timer, 30000000,false);
-	// timerAlarmEnable(timer);
-
-
-//	jetzt = millis();
-	//print_msg("Waiting for CAM ...",500, 10);
 }	// End Setup
 
 void loop()
 {
 	if (touched)														// touch dedected BL on make keypad
 	{
+		Serial.println(" loop  touchrd");
 		touched = false;
-		digitalWrite(2, HIGH); 										// BLy ein
+		digitalWrite(2, HIGH); 										// BL ein
 		create_buttons(1);											// keypad activ
 		no_buttons = false;											// set flag keypad on
-
-		// timer Off while test
-		// timer = timerBegin(0, 80, true);
-		// timerAttachInterrupt(timer, &onTimer, true);
-		// timerAlarmWrite(timer, 30000000,false);
-		// timerAlarmEnable(timer);
+		startTimer();
 	}
-
-	// if (!pinOk)
-	//	{}
-		
 
 	// 	// Start the Viodo and the Timer only once
 if (server.poll())
@@ -395,23 +392,18 @@ if (server.poll())
   if (client.available())
   {
     client.poll();
-
     WebsocketsMessage msg = client.readBlocking();
-
-	lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,150);  // it is from the LovyanGFX library  and works  fine
+	if (pinOkSet)
+	{
+		timerRestart(timer);									// restart timeout		if (!video)													// video läuft noch nicht
+		{
+			video = true;										// flag video runs
+		}
+		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,150);  // it is from the LovyanGFX library  and works  fine
+	}
 }
  
-
-
-
-
-	// 		// WebsocketsMessage msg = client.readBlocking();
-	 		auto msg = client.readBlocking();
-	 		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length()); // draws the JPEG on the screen
-	
-	
-	
 	lv_timer_handler(); /* let the GUI do its work */
-	delay(10);
+//	delay(10);
 	// now2 = millis();
 }
