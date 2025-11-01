@@ -142,20 +142,7 @@ bool loadConfigFromSD()
 }
 // === SD Card END ===
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// === HW Timer ===
 
 	hw_timer_t *timer = NULL;
 	
@@ -165,15 +152,22 @@ bool loadConfigFromSD()
 		ESP.restart();
 	}
 
+/**
+ * @brief  start a HW timer for 30 seconds
+ * @note  needed fo backlight off if screen was touched but nothing done
+ * or to to stop video after 30 seconds
+ */
 void startTimer()
 {
 	timer = timerBegin(0, 80, true);
 	timerAttachInterrupt(timer, &onTimer, true);
 	timerAlarmWrite(timer, 30000000,false);
 	timerAlarmEnable(timer);
-
 }
 
+/**
+ * @brief restarts the timer, if a key was pressed let the timeout start again
+ */
 void reStartTimer()
 {
 	timerRestart(timer);

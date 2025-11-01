@@ -21,8 +21,9 @@ int sizeX = 90;
 int sizeY = 90;
 bool failed = false;
 
-//int loopPosX = 500;
-//int loopPosY = 350;
+int loopPosX = 500;
+int loopPosY = 350;
+
 
 
 // prueft nach Eingabe der PIN Laenge auf Gueltigkeit
@@ -42,7 +43,7 @@ void check_pin(uint8_t number)
 		// Kennung für Eingabe anzeigen unter KeyPad
 		// ist fix Y wandert
 	 	//char* star = "*";
-		//print_msg(star,loopPosX, loopPosY - (100 * eingabe_zaehler),1);
+		print_msg("*",loopPosX, loopPosY - (100 * eingabe_zaehler),1);
 
 		#ifdef DEBUG
 			Serial.print("number: ");
@@ -82,7 +83,6 @@ void check_pin(uint8_t number)
 			lv_obj_clean(scr);				// Clear Screen
 
 //			lv_obj_set_style_bg_color(scr,lv_palette_main(LV_PALETTE_GREEN),LV_PART_MAIN);
-
 
 		}
 		else
