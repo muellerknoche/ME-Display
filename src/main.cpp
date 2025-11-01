@@ -7,19 +7,19 @@
  * @date now 20. Okt. 2025 nearly finished
  * @data 23. Oct, 2025 SD card rein timer Integration ??
  * @note neuer branch am 29.10.2025
- * @date weiter 30.10.2025
+ * @date weiter 30.10.2025 .h verstanden Umbau
+ * @date 01.11.2025 Schnauze voll alles zurück nach main.cpp  
  */
 
 #include <Arduino.h>
 
 #define DEBUG				// comment for final
 
-#include <main.h>
-#include <config.h>
+//#include "main.h"
+#include "my_globals.h"
 #include <WiFi.h>       	// For WiFi AP
 #include <SD.h>         	// SD card library
 #include <SPI.h>        	// SPI for SD
-#include <sd_card.h>		// get data from SD
 
 #include <lvgl.h>
 #include <FS.h>
@@ -27,14 +27,135 @@
 // #include <stdio.h>
 #include <LovyanGFX.hpp>
 #include <TAMC_GT911.h>
-#include <lvgl.h>
 // #iclude <wire.h>
 // #include "esp_psram.h"
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 #include <ArduinoWebsockets.h>
-#include <my_tools.h>
-#include <config.h>
+
+// === FIRST the SD card part====
+
+
+#define SD_MOSI 11
+#define SD_MISO 13
+#define SD_SCK 12
+#define SD_CS 10
+
+// Default values if SD read fails
+String defaultSSID = "ELECROW";
+String defaultPassword = "dummyPASS";               // Must be at least 8 chars for WPA2
+IPAddress defaultIP(192, 168, 4, 1);
+IPAddress defaultGateway(192, 168, 4, 1);
+IPAddress defaultSubnet(255, 255, 255, 0);
+String defaultPin = "5260";
+String defaultLaenge = "4";
+
+// Variables to store loaded config
+String ssid;
+String password;
+IPAddress localIP;
+IPAddress gateway;
+IPAddress subnet;
+String pin;
+String laenge;
+
+
+// === First get Config from SD Card ====
+const int csPin = 10;
+// Function to trim whitespace from strings
+String trim(String str)
+{
+  	str.trim();
+  	return str;
+}
+// Function to read and parse config from SD
+bool loadConfigFromSD()
+{
+
+//	Serial.begin(115200);			// Start Serial
+//	while(!Serial){delay(100);}
+	if (!SD.begin(csPin))										// is SD card accessable
+	{
+    	Serial.println("SD card mount failed");
+    	return false;
+  	}
+  	Serial.println("SD card mounted");							// OK i
+
+  	File file = SD.open("/config.txt");							// try open config file
+  	if (!file)
+	{
+		Serial.println("Failed to open /config.txt");			// failed to open
+		return false;
+	}
+
+  	while (file.available())
+	{
+    	String line = file.readStringUntil('\n');				// read one line
+
+		Serial.println(line);									// and print
+
+    	line = trim(line);										// remove white space front and end
+    	if (line.length() == 0 || line.startsWith("#")) continue;  		// Skip empty or comments
+
+    	int eqIndex = line.indexOf('=');						// find pos of '='
+    	if (eqIndex == -1) continue;  							// Invalid line
+
+    	String key = trim(line.substring(0, eqIndex));			// read key (befor =), store string in  key
+    	String value = trim(line.substring(eqIndex + 1));		// read value (after =), store in vaue
+	
+	// dependend of key store to final variable
+		if (key == "ssid") ssid = value;
+    	else if (key == "password") password = value;
+    	else if (key == "ip") localIP.fromString(value);
+    	else if (key == "gateway") gateway.fromString(value);
+    	else if (key == "subnet") subnet.fromString(value);
+    	else if (key == "pin") pin = value;
+    	else if (key == "laenge") laenge = value;
+    }
+  	file.close();
+
+  	// Validate if all were loaded
+  	if (pin.isEmpty() || laenge.isEmpty() || ssid.isEmpty() || password.isEmpty() || localIP == IPAddress(0,0,0,0) ||
+      gateway == IPAddress(0,0,0,0) || subnet == IPAddress(0,0,0,0)) 
+	{
+    	Serial.println("Incomplete config, using defaults");	// somethings missing
+    	return false;
+  	}
+	
+	// convert 'laenge' and 'pin' 
+	pin_len = laenge[0] - '0';
+
+	for (int i= 0; i < pin_len;i++)
+	{
+		reference_code[i] = pin[i] - '0';
+		Serial.print(reference_code[i]);
+	}
+	Serial.println();
+
+	#ifdef DEBUG
+	  	Serial.println("Config loaded: SSID=" + ssid + ", IP=" + localIP.toString());
+  		Serial.println(pin);
+  		Serial.println(laenge);
+	#endif
+	return true;
+	
+}
+// === SD Card END ===
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	hw_timer_t *timer = NULL;
 	
@@ -222,6 +343,8 @@ void print_time_rest(char message[], uint8_t clear_it = 0)
 	}
 }
 
+bool touched = false;
+
 // Anzeige Touch Position auf Monitor
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 {
@@ -375,7 +498,7 @@ void loop()
 {
 	if (touched)														// touch dedected BL on make keypad
 	{
-		Serial.println(" loop  touchrd");
+		Serial.println(" loop  touched");
 		touched = false;
 		digitalWrite(2, HIGH); 										// BL ein
 		create_buttons(1);											// keypad activ
