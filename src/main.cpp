@@ -13,7 +13,7 @@
 
 #include <Arduino.h>
 
-#define DEBUG				// comment for final
+// #define DEBUG			// comment for final
 
 //#include "main.h"
 #include "my_globals.h"
@@ -159,6 +159,7 @@ bool loadConfigFromSD()
  */
 void startTimer()
 {
+	Serial.println("startTimer");
 	timer = timerBegin(0, 80, true);
 	timerAttachInterrupt(timer, &onTimer, true);
 	timerAlarmWrite(timer, 30000000,false);
@@ -173,6 +174,7 @@ void reStartTimer()
 	timerRestart(timer);
 }
 
+// === END TIMER ===
 
 //SPIClass SD_SPI;
 
@@ -411,6 +413,7 @@ void setup()
   	Serial.println(WiFi.softAPIP());
 
 	pinMode(TFT_BL, OUTPUT);		// Backlight Control
+	digitalWrite(TFT_BL, LOW);		// BL OUT
 
 	// Init Display
 	lcd.begin();
@@ -478,13 +481,13 @@ void loop()
 {
 	if (touched)								// touch dedected BL on make keypad
 	{
-		touched = false;
+		touched = false;						// reset flag
 		digitalWrite(2, HIGH); 					// BL ein
 		if (no_buttons)
 		{
 			create_buttons(1);					// keypad activ
 			no_buttons = false;					// set flag keypad on
-			startTimer();
+			startTimer();						// srart the timer
 		}
 	}
 
@@ -500,7 +503,7 @@ if (server.poll())
     WebsocketsMessage msg = client.readBlocking();
 	if (pin_ok)
 	{
-		timerRestart(timer);									// restart timeout		if (!video)													// video läuft noch nicht
+		reStartTimer();				   							// restart timeout													// video läuft noch nicht
 		video = true;											// flag video runs
 		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
 	}

@@ -90,11 +90,14 @@ void check_pin(uint8_t number)
 		}
 		else
 		{
-			failed = true;
-			Serial.println("FAIL    ");
-			pin_ok = false;
-			lv_obj_t * scr = lv_scr_act();
-			lv_obj_clean(scr);
+			delay(500);
+			ESP.restart();
+
+			// failed = true;
+			// Serial.println("FAIL    ");
+			// pin_ok = false;
+			// lv_obj_t * scr = lv_scr_act();
+			// lv_obj_clean(scr);
 //			lv_obj_set_style_bg_color(scr,lv_palette_main(LV_PALETTE_RED),LV_PART_MAIN);
 		}
 	}
