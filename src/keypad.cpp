@@ -41,9 +41,10 @@ void check_pin(uint8_t number)
 	if (eingabe_zaehler < pin_len)
 	{
 		// Kennung für Eingabe anzeigen unter KeyPad
-		// ist fix Y wandert
-	 	//char* star = "*";
-		print_msg("*",loopPosX, loopPosY - (100 * eingabe_zaehler),1);
+		// X ist fix Y wandert
+	 	char buffer[] = "*";
+		char* star = buffer;
+		print_msg(star,loopPosX, loopPosY - (100 * eingabe_zaehler),1);
 
 		#ifdef DEBUG
 			Serial.print("number: ");

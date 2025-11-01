@@ -142,7 +142,7 @@ bool loadConfigFromSD()
 }
 // === SD Card END ===
 
-// === HW Timer ===
+// === HW Timer Start ===
 
 	hw_timer_t *timer = NULL;
 	
@@ -516,7 +516,7 @@ if (server.poll())
 		{
 			video = true;										// flag video runs
 		}
-		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,150);  // it is from the LovyanGFX library  and works  fine
+		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
 	}
 }
  
