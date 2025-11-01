@@ -347,20 +347,10 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 		if (touch_touched())
 		{
 			touched = true;					// indicate for loop
-
 			data->state = LV_INDEV_STATE_PR;
 			/*Set the coordinates*/
 			data->point.x = touch_last_x;
 			data->point.y = touch_last_y;
-
-			//#ifdef DEBUG
-				Serial.print("touched ");  Serial.println(millis());
-				Serial.print( "Data x :" );
-				Serial.println( touch_last_x );
-				Serial.print( "Data y :" );
-				Serial.println( touch_last_y );
-			//#endif
-
 		}
 		else if (touch_released())
 		{
@@ -480,24 +470,22 @@ void setup()
 			Serial.println("NO");
 		}
 	
-		Serial.println(server.available());
-		Serial.println("-------------");
-		//----------------------------------------
-		Serial.println("Waiting for connection from ESP32-CAM (Client).");
 	#endif
 
 }	// End Setup
 
 void loop()
 {
-	if (touched)														// touch dedected BL on make keypad
+	if (touched)								// touch dedected BL on make keypad
 	{
-		Serial.println(" loop  touched");
 		touched = false;
-		digitalWrite(2, HIGH); 										// BL ein
-		create_buttons(1);											// keypad activ
-		no_buttons = false;											// set flag keypad on
-		startTimer();
+		digitalWrite(2, HIGH); 					// BL ein
+		if (no_buttons)
+		{
+			create_buttons(1);					// keypad activ
+			no_buttons = false;					// set flag keypad on
+			startTimer();
+		}
 	}
 
 	// 	// Start the Viodo and the Timer only once
@@ -513,14 +501,11 @@ if (server.poll())
 	if (pin_ok)
 	{
 		timerRestart(timer);									// restart timeout		if (!video)													// video läuft noch nicht
-		{
-			video = true;										// flag video runs
-		}
+		video = true;											// flag video runs
 		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
 	}
 }
- 
-	lv_timer_handler(); /* let the GUI do its work */
+lv_timer_handler(); /* let the GUI do its work */
 //	delay(10);
 	// now2 = millis();
 }

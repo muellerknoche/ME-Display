@@ -29,7 +29,7 @@ int loopPosY = 350;
 // prueft nach Eingabe der PIN Laenge auf Gueltigkeit
 void check_pin(uint8_t number)
 {
-	reStartTimer();
+	reStartTimer();				// timeout verlängern Wenn eingabe
 	bool fails = false;			// default OK
 
 	#ifdef DEBUG
@@ -40,6 +40,8 @@ void check_pin(uint8_t number)
 	// check for max
 	if (eingabe_zaehler < pin_len)
 	{
+		// Timeout verlaengern wenn Taste gedrückt
+		reStartTimer();
 		// Kennung für Eingabe anzeigen unter KeyPad
 		// X ist fix Y wandert
 	 	char buffer[] = "*";
