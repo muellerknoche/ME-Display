@@ -1,5 +1,5 @@
 
-#include "keypad.h"
+
 #include "my_globals.h"
 #include "main.h"
 #include <Arduino.h>
@@ -19,21 +19,11 @@ int row_4 = row_3 + 100;
 
 int sizeX = 90;
 int sizeY = 90;
-
-bool pinOK = false;
-
-// Zaehler PIN Eingabe
-//int8_t eingabe_zaehler = 0;        // digits entered
-
-//uint8_t pin_len = 4;                // PIN has as many digits
-// Array enthaelt eingegebene PIN
-int incode[4];                      // storage for enter digits
+bool failed = false;
 
 //int loopPosX = 500;
 //int loopPosY = 350;
 
-// flags
-bool failed = false;                // PIN was invalid
 
 // prueft nach Eingabe der PIN Laenge auf Gueltigkeit
 void check_pin(uint8_t number)
@@ -86,7 +76,7 @@ void check_pin(uint8_t number)
 		}
 		if 	(fails == false)				// pin was OK
 		{
-			pinOk = true;
+			pin_ok = true;
 
 			lv_obj_t *scr = lv_scr_act();
 			lv_obj_clean(scr);				// Clear Screen
@@ -99,7 +89,7 @@ void check_pin(uint8_t number)
 		{
 			failed = true;
 			Serial.println("FAIL    ");
-			pinOk = false;
+			pin_ok = false;
 			lv_obj_t * scr = lv_scr_act();
 			lv_obj_clean(scr);
 //			lv_obj_set_style_bg_color(scr,lv_palette_main(LV_PALETTE_RED),LV_PART_MAIN);

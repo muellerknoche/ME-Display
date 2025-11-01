@@ -1,13 +1,8 @@
-/**
- * keypad.h
- */
+#ifndef _KEYPA_D0111_H_
+#define _KEYPAD_0111_H_
 
 
-#ifndef _KEYPAD_H_
-#define _KEYPAD_H_
-
-
-#include <Arduino.h>
+#include "my_globals.h"
 
 #include <lvgl.h>
 
@@ -30,11 +25,11 @@ extern int sizeY;
 
 
 // Zaehler PIN Eingabe
-extern uint8_t eingabe_zaehler;                     // digits entered
-extern uint8_t pin_len;                             // PIN has as many digits
+//extern uint8_t eingabe_zaehler;                     // digits entered
+//extern uint8_t pin_len;                             // PIN has as many digits
 // Array enthaelt eingegebene PIN
-extern int in_code[4];
-extern uint8_t refference_code[4];                  // storage for enter digits
+//extern uint8_t in_code[4];
+//extern uint8_t refference_code[4];                  // storage for enter digits
 
 extern int loopPosX;
 extern int loopPosY;

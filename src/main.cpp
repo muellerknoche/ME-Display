@@ -516,7 +516,7 @@ if (server.poll())
   {
     client.poll();
     WebsocketsMessage msg = client.readBlocking();
-	if (pinOkSet)
+	if (pin_ok)
 	{
 		timerRestart(timer);									// restart timeout		if (!video)													// video läuft noch nicht
 		{
