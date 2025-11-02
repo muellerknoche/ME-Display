@@ -406,15 +406,15 @@ void create_buttons(uint8_t farbe)
 		lv_obj_center(l_neun);
 
 		// Button CLEAR
-		lv_obj_t * clear = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(clear, row_4, col_1);							/*Set its position*/
-		lv_obj_set_size(clear, sizeX, sizeY);							/*Set its size*/
-		lv_obj_add_event_cb(clear, cl_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
-		lv_obj_set_style_transform_angle(clear, 2700, 0);	
-		lv_obj_t * l_clear = lv_label_create(clear);					/*Add a label to the button*/
-		lv_obj_set_style_text_font(l_clear, &lv_font_montserrat_36, 0);	/**Set the labels text*/
-		lv_label_set_text(l_clear, "Clear");							/*Set the labeks text*/
-		lv_obj_center(l_clear);
+		// lv_obj_t * clear = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
+		// lv_obj_set_pos(clear, row_4, col_1);							/*Set its position*/
+		// lv_obj_set_size(clear, sizeX, sizeY);							/*Set its size*/
+		// lv_obj_add_event_cb(clear, cl_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
+		// lv_obj_set_style_transform_angle(clear, 2700, 0);	
+		// lv_obj_t * l_clear = lv_label_create(clear);					/*Add a label to the button*/
+		// lv_obj_set_style_text_font(l_clear, &lv_font_montserrat_36, 0);	/**Set the labels text*/
+		// lv_label_set_text(l_clear, "Clear");							/*Set the labeks text*/
+		// lv_obj_center(l_clear);
 
 		// Button NULL
 		lv_obj_t * nullx = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
@@ -428,21 +428,21 @@ void create_buttons(uint8_t farbe)
 		lv_obj_center(l_nullx);
 
 		// Button OK
-		lv_obj_t * okx = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		lv_obj_set_pos(okx, row_4, col_3);								/*Set its position*/
-		lv_obj_set_size(okx, sizeX, sizeY);								/*Set its size*/
-		lv_obj_add_event_cb(okx, ok_event, LV_EVENT_ALL, NULL);			/*Assign a callback to the button*/
-		lv_obj_set_style_transform_angle(okx, 2700, 0);
+		// lv_obj_t * okx = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
+		// lv_obj_set_pos(okx, row_4, col_3);								/*Set its position*/
+		// lv_obj_set_size(okx, sizeX, sizeY);								/*Set its size*/
+		// lv_obj_add_event_cb(okx, ok_event, LV_EVENT_ALL, NULL);			/*Assign a callback to the button*/
+		// lv_obj_set_style_transform_angle(okx, 2700, 0);
 
-		//lv_obj_set_style_local_bg_color(okx, LV_BTN_MAIN, LV_STATE_DEFAULT, LV_COLOR_RED);
-		lv_obj_t * l_okx = lv_label_create(okx);						/*Add a label to the button*/
+		// //lv_obj_set_style_local_bg_color(okx, LV_BTN_MAIN, LV_STATE_DEFAULT, LV_COLOR_RED);
+		// lv_obj_t * l_okx = lv_label_create(okx);						/*Add a label to the button*/
 
-		lv_obj_set_style_text_font(l_okx, &lv_font_montserrat_46, 0);	/**Set the labels text*/
+		// lv_obj_set_style_text_font(l_okx, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 
-		//		lv_obj_set_style_text_color(l_okx,);
+		// //		lv_obj_set_style_text_color(l_okx,);
 
-		lv_label_set_text(l_okx, "OK");									/*Set the labeks text*/
-		lv_obj_center(l_okx);
+		// lv_label_set_text(l_okx, "OK");									/*Set the labeks text*/
+		// lv_obj_center(l_okx);
 	}
 	// ok_func()														// kamera ein
 

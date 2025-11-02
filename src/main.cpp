@@ -503,7 +503,11 @@ if (server.poll())
     WebsocketsMessage msg = client.readBlocking();
 	if (pin_ok)
 	{
-		reStartTimer();				   							// restart timeout													// video läuft noch nicht
+		if (!video)
+		{
+			reStartTimer();			   							// restart timeout
+																// video läuft noch nicht
+		}
 		video = true;											// flag video runs
 		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
 	}
