@@ -130,7 +130,7 @@ bool loadConfigFromSD()
 		reference_code[i] = pin[i] - '0';
 		Serial.print(reference_code[i]);
 	}
-	Serial.println();
+	Serial.println("###################################################################");
 
 	#ifdef DEBUG
 	  	Serial.println("Config loaded: SSID=" + ssid + ", IP=" + localIP.toString());

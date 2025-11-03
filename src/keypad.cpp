@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <lvgl.h>
 
-
+#define  DEBUG
 // Konstanten für Tastenposition
 
 int col_1 = 400;//(480 -290)/2;
