@@ -13,7 +13,7 @@
 
 #include <Arduino.h>
 
-// #define DEBUG			// comment for final
+ #define DEBUG			// comment for final
 
 //#include "main.h"
 #include "my_globals.h"
@@ -353,6 +353,12 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 			/*Set the coordinates*/
 			data->point.x = touch_last_x;
 			data->point.y = touch_last_y;
+
+			#ifdef DEBUG
+			Serial.print("x: ");	Serial.println(touch_last_x);
+			Serial.print("y: ");	Serial.println(touch_last_y);
+			#endif
+
 		}
 		else if (touch_released())
 		{
@@ -407,6 +413,7 @@ void setup()
   	} else {
     	Serial.println("AP config successful");
   	}
+	delay(2000);
 
   	// Print AP IP
   	Serial.print("AP IP address: ");
@@ -451,13 +458,6 @@ void setup()
 	lv_timer_handler();
 
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
-
-	#ifdef DEBUG
-		Serial.println();
-		Serial.println("Create ESP32 as Access Point and start the server.");
-		Serial.println("WIFI mode : AP");
-	#endif
-
 
 	server.listen(8888);
 
