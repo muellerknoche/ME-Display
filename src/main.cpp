@@ -32,6 +32,8 @@
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 #include <ArduinoWebsockets.h>
+#include <esp_task_wdt.h>
+#define WDT_TIMEOUT 3			// 3 sekunden
 
 // === FIRST the SD card part====
 
@@ -152,6 +154,17 @@ bool loadConfigFromSD()
 		ESP.restart();
 	}
 
+// === WD Timer Start ===
+
+	// hw_timer_t *timer1 = NULL;
+	
+	// void IRAM_ATTR onTimer1()
+	// {
+	// 	delay(50);
+	// 	//ESP.restart();
+	// }
+
+
 /**
  * @brief  start a HW timer for 30 seconds
  * @note  needed fo backlight off if screen was touched but nothing done
@@ -165,6 +178,18 @@ void startTimer()
 	timerAlarmWrite(timer, 30000000,false);
 	timerAlarmEnable(timer);
 }
+
+// void startTimer1()
+// {
+// 	Serial.println("startTimer1");
+// 	timer = timerBegin(1, 80, true);
+// 	timerAttachInterrupt(timer1, &onTimer1, true);
+// 	timerAlarmWrite(timer, 10000000,false);
+// 	timerAlarmEnable(timer1);
+// }
+
+
+
 
 /**
  * @brief restarts the timer, if a key was pressed let the timeout start again
@@ -391,6 +416,11 @@ void setup()
 	 while(!Serial){delay(100);}
 
 
+// watchdog now
+	esp_task_wdt_init(WDT_TIMEOUT, true); // enable panic so ESP32 restarts
+  	esp_task_wdt_add(NULL); // add current thread to WDT watch
+
+
 	// Serial.println("START SERIAL");
 
 	// Load config or use defaults
@@ -461,6 +491,8 @@ void setup()
 
 	server.listen(8888);
 
+	//startTimer1();		//watchdog
+
 	#ifdef DEBUG
 		Serial.println();
 		Serial.print("Is server live ? ");
@@ -477,8 +509,14 @@ void setup()
 
 }	// End Setup
 
+unsigned long start = 0;
+unsigned long end = 0;
+
 void loop()
 {
+	esp_task_wdt_reset();						// WD reset	
+
+	start = millis();
 	if (touched)								// touch dedected BL on make keypad
 	{
 		touched = false;						// reset flag
@@ -500,7 +538,9 @@ if (server.poll())
   if (client.available())
   {
     client.poll();
-    WebsocketsMessage msg = client.readBlocking();
+	start = millis();
+	WebsocketsMessage msg = client.readBlocking();
+
 	if (pin_ok)
 	{
 		if (!video)
@@ -511,7 +551,11 @@ if (server.poll())
 		video = true;											// flag video runs
 		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
 	}
+	end = millis();
 }
+
+Serial.println( end - start);
+
 lv_timer_handler(); /* let the GUI do its work */
 //	delay(10);
 	// now2 = millis();

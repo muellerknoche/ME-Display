@@ -14,4 +14,6 @@ extern bool no_buttons;
 extern bool pinOkSet;
 extern bool video;
 
+
+
 #endif //  _MYGLOBALS_0111_H_
