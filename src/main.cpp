@@ -8,7 +8,8 @@
  * @data 23. Oct, 2025 SD card rein timer Integration ??
  * @note neuer branch am 29.10.2025
  * @date weiter 30.10.2025 .h verstanden Umbau
- * @date 01.11.2025 Schnauze voll alles zurück nach main.cpp  
+ * @date 01.11.2025 Schnauze voll alles zurück nach main.cpp
+ * @date ß0.11.2025 Branch nach msaster
  */
 
 #include <Arduino.h>
