@@ -26,7 +26,13 @@ int loopPosY = 350;
 
 
 
-// prueft nach Eingabe der PIN Laenge auf Gueltigkeit
+/**
+ * @author Rainer Müller-Knoche
+ * @date 09.11.2025 comments
+ * @brief stores pressed key,  counts pressed keys, if the last key is pressed it compares  to the correct key
+ * if Ok the flag for videon is set if not the system is restarted. the timeout timer to reset is resrarted
+ * @param number the value of pressed key
+ */
 void check_pin(uint8_t number)
 {
 	reStartTimer();				// timeout verlängern Wenn eingabe
@@ -258,7 +264,7 @@ static void cl_event(lv_event_t * e)
 		// lv_obj_set_style_text_font(cl_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		// lv_label_set_text(cl_txt, "*CL");
 		Serial.println("CL pressed");
-		// clear()										// alle Eingaben vergessen
+		ESP.restart();										// alle Eingaben vergessen
 	}
 
 }
@@ -406,15 +412,15 @@ void create_buttons(uint8_t farbe)
 		lv_obj_center(l_neun);
 
 		// Button CLEAR
-		// lv_obj_t * clear = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
-		// lv_obj_set_pos(clear, row_4, col_1);							/*Set its position*/
-		// lv_obj_set_size(clear, sizeX, sizeY);							/*Set its size*/
-		// lv_obj_add_event_cb(clear, cl_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
-		// lv_obj_set_style_transform_angle(clear, 2700, 0);	
-		// lv_obj_t * l_clear = lv_label_create(clear);					/*Add a label to the button*/
-		// lv_obj_set_style_text_font(l_clear, &lv_font_montserrat_36, 0);	/**Set the labels text*/
-		// lv_label_set_text(l_clear, "Clear");							/*Set the labeks text*/
-		// lv_obj_center(l_clear);
+		lv_obj_t * clear = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
+		lv_obj_set_pos(clear, row_4, col_1);							/*Set its position*/
+		lv_obj_set_size(clear, sizeX, sizeY);							/*Set its size*/
+		lv_obj_add_event_cb(clear, cl_event, LV_EVENT_ALL, NULL);		/*Assign a callback to the button*/
+		lv_obj_set_style_transform_angle(clear, 2700, 0);	
+		lv_obj_t * l_clear = lv_label_create(clear);					/*Add a label to the button*/
+		lv_obj_set_style_text_font(l_clear, &lv_font_montserrat_36, 0);	/**Set the labels text*/
+		lv_label_set_text(l_clear, "Clear");							/*Set the labeks text*/
+		lv_obj_center(l_clear);
 
 		// Button NULL
 		lv_obj_t * nullx = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
