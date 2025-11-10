@@ -16,10 +16,10 @@
 
 #include <Arduino.h>
 
- #define DEBUG			// comment for final
+// #define DEBUG			// comment for final
 
 //#include "main.h"
-#include "my_globals.h"
+#include "my_globals.h"		// ehemals main.h
 #include <WiFi.h>       	// For WiFi AP
 #include <SD.h>         	// SD card library
 #include <SPI.h>        	// SPI for SD
@@ -36,7 +36,7 @@
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 #include <ArduinoWebsockets.h>
 #include <esp_task_wdt.h>
-#define WDT_TIMEOUT 3			// 3 sekunden
+#define WDT_TIMEOUT 5			// 5 sekunden
 
 // === FIRST the SD card part====
 
@@ -518,13 +518,12 @@ unsigned long end = 0;
 void loop()
 {
 	esp_task_wdt_reset();						// WD reset	
-
-	start = millis();
+	//start = millis();
 	if (touched)								// touch dedected BL on make keypad
 	{
 		touched = false;						// reset flag
 		digitalWrite(2, HIGH); 					// BL ein
-		if (no_buttons)
+		if (no_buttons)							// set to high in my_globald.cpp
 		{
 			create_buttons(1);					// keypad activ
 			no_buttons = false;					// set flag keypad on
@@ -533,33 +532,34 @@ void loop()
 	}
 
 	// 	// Start the Viodo and the Timer only once
-if (server.poll())
-  {
-    client = server.accept();
-  }
-
-  if (client.available())
-  {
-    client.poll();
-	start = millis();
-	WebsocketsMessage msg = client.readBlocking();
-
-	if (pin_ok)
-	{
-		if (!video)
-		{
-			reStartTimer();			   							// restart timeout
-																// video läuft noch nicht
-		}
-		video = true;											// flag video runs
-		lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
-	}
+	start = millis();	
+	if (server.poll())
+  	{
+    	client = server.accept();
+  	}
 	end = millis();
-}
+  	if (client.available())
+  	{
+    	client.poll();
+	
+		WebsocketsMessage msg = client.readBlocking();
 
-Serial.println( end - start);
+		if (pin_ok)
+		{
+			if (!video)
+			{
+				reStartTimer();			   							// restart timeout
+																	// video läuft noch nicht
+			}
+			video = true;											// flag video runs
+			lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
+		}
+		//end = millis();
+	}
 
-lv_timer_handler(); /* let the GUI do its work */
-//	delay(10);
+	Serial.println( end - start);
+
+	lv_timer_handler(); /* let the GUI do its work */
+//	delay(2);
 	// now2 = millis();
 }
