@@ -10,6 +10,7 @@
  * @date weiter 30.10.2025 .h verstanden Umbau
  * @date 01.11.2025 Schnauze voll alles zurück nach main.cpp
  * @date 09.11.2025 Branch nach msaster
+ * Aktuelle Version 1.0.0
  * 
  */
 
