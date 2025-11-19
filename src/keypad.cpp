@@ -264,6 +264,7 @@ static void cl_event(lv_event_t * e)
 		// lv_obj_set_style_text_font(cl_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		// lv_label_set_text(cl_txt, "*CL");
 		Serial.println("CL pressed");
+		delay(50);
 		ESP.restart();										// alle Eingaben vergessen
 	}
 

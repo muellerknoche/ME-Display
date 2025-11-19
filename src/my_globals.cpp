@@ -18,3 +18,7 @@ bool pin_ok = false;
 bool pinOkSet = false;
 
 bool video = false;
+
+bool firstTouch = false;
+bool firstTouchSeen = false;
+

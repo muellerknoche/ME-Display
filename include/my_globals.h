@@ -14,6 +14,9 @@ extern bool no_buttons;
 extern bool pinOkSet;
 extern bool video;
 
+extern bool firstTouch;
+extern bool firstTouchSeen;
+
 
 
 #endif //  _MYGLOBALS_0111_H_
