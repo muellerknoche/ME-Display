@@ -154,7 +154,8 @@ bool loadConfigFromSD()
 	
 	void IRAM_ATTR onTimer()
 	{
-		delay(100);
+		Serial.println("30 sekunden Timer rrestart");
+		delay(2000);
 		ESP.restart();
 	}
 
@@ -383,10 +384,10 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 			data->point.x = touch_last_x;
 			data->point.y = touch_last_y;
 
-			#ifdef DEBUG
+			//#ifdef DEBUG
 			Serial.print("x: ");	Serial.println(touch_last_x);
 			Serial.print("y: ");	Serial.println(touch_last_y);
-			#endif
+			//#endif
 
 		}
 		else if (touch_released())
@@ -417,11 +418,11 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 void setup()
 {
 	 Serial.begin(115200);			// Start Serial
-	 while(!Serial){delay(100);}
-
+//	 while(!Serial){delay(100);}
+	delay(200);
 
 // watchdog now
-	esp_task_wdt_init(WDT_TIMEOUT, true); // enable panic so ESP32 restarts
+	esp_task_wdt_init(5, true); // enable panic so ESP32 restarts
   	esp_task_wdt_add(NULL); // add current thread to WDT watch
 
 
@@ -520,25 +521,25 @@ void loop()
 {
 	esp_task_wdt_reset();						// WD reset	
 	//start = millis();
-	if (touched)								// touch dedected BL on make keypad
+	if (firstTouch && !firstTouchSeen)			// touch dedected BL on make keypad
 	{
-		touched = false;						// reset flag
+		firstTouchSeen = true;					// set flag to be here only once
 		digitalWrite(2, HIGH); 					// BL ein
-		if (no_buttons)							// set to high in my_globald.cpp
-		{
+		// if (no_buttons)						// set to high in my_globald.cpp
+		// {
 			create_buttons(1);					// keypad activ
 			no_buttons = false;					// set flag keypad on
 			startTimer();						// srart the timer
-		}
+		// 	}
 	}
 
 	// 	// Start the Viodo and the Timer only once
-	start = millis();	
+	//start = millis();	
 	if (server.poll())
   	{
     	client = server.accept();
   	}
-	end = millis();
+	//end = millis();
   	if (client.available())
   	{
     	client.poll();
@@ -558,7 +559,7 @@ void loop()
 		//end = millis();
 	}
 
-	Serial.println( end - start);
+	//Serial.println( end - start);
 
 	lv_timer_handler(); /* let the GUI do its work */
 //	delay(2);
