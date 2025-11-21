@@ -378,7 +378,7 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	{
 		if (touch_touched())
 		{
-			touched = true;					// indicate for loop
+			firstTouch = true;					// indicate for loop
 			data->state = LV_INDEV_STATE_PR;
 			/*Set the coordinates*/
 			data->point.x = touch_last_x;
@@ -422,8 +422,8 @@ void setup()
 	delay(200);
 
 // watchdog now
-	esp_task_wdt_init(5, true); // enable panic so ESP32 restarts
-  	esp_task_wdt_add(NULL); // add current thread to WDT watch
+//	esp_task_wdt_init(5, true); // enable panic so ESP32 restarts
+//  	esp_task_wdt_add(NULL); // add current thread to WDT watch
 
 
 	// Serial.println("START SERIAL");
@@ -519,18 +519,24 @@ unsigned long end = 0;
 
 void loop()
 {
-	esp_task_wdt_reset();						// WD reset	
+	//esp_task_wdt_reset();						// WD reset	
 	//start = millis();
-	if (firstTouch && !firstTouchSeen)			// touch dedected BL on make keypad
+	if (firstTouch)		// touch dedected BL on make keypad
 	{
-		firstTouchSeen = true;					// set flag to be here only once
-		digitalWrite(2, HIGH); 					// BL ein
-		// if (no_buttons)						// set to high in my_globald.cpp
-		// {
+		if (!firstTouchSeen)
+		{
+			Serial.println("first create");
+
+			firstTouchSeen = true;					// set flag to be here only once
+	
+			digitalWrite(2, HIGH); 					// BL ein
+			// if (no_buttons)						// set to high in my_globald.cpp
+			// {
 			create_buttons(1);					// keypad activ
 			no_buttons = false;					// set flag keypad on
 			startTimer();						// srart the timer
 		// 	}
+		}
 	}
 
 	// 	// Start the Viodo and the Timer only once
@@ -544,6 +550,7 @@ void loop()
   	{
     	client.poll();
 	
+//		WebsocketsMessage msg = NULL;
 		WebsocketsMessage msg = client.readBlocking();
 
 		if (pin_ok)
