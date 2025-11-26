@@ -10,28 +10,19 @@
  * @date weiter 30.10.2025 .h verstanden Umbau
  * @date 01.11.2025 Schnauze voll alles zurück nach main.cpp
  * @date 09.11.2025 Branch nach msaster
-<<<<<<< HEAD
  * @date 12.11.2025 lv_conf.h + ports für Linux
  * Aktuelle Version 1.0.2
- * 
-=======
- * Aktuelle Version 1.0.0
  * @date 21.11.2025 neuer Branch Display as WEbsockets Client
  * Neue Version 1.1.0
  * @date 23.11.25 sd Card zurück in Main 
-<<<<<<< HEAD
->>>>>>> 96eb749 (vor Merge)
-=======
  * @date 26.11.15 vor 8:00 merge back to master
- * 
->>>>>>> eeeb1d9 (26.11.2025 after merge to master some comments)
+ * @todo finish loop etc. 
  */
 
 #include <Arduino.h>
 
-// #define DEBUG			// comment for final
+#define DEBUG				// comment for final
 
-//#include "main.h"
 #include "my_globals.h"		// ehemals main.h
 #include <WiFi.h>       	// For WiFi AP
 #include <SD.h>         	// SD card library
@@ -41,7 +32,6 @@
 #include <FS.h>
 #include <keypad.h>
 
-#define DEBUG
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!
 //const char* websockets_server_host = "192.168.1.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
@@ -88,6 +78,7 @@ const char* wsPath = "/";						// Default path
  * @brief  start a HW timer for 30 seconds
  * @note  needed fo backlight off if screen was touched but nothing done
  * or to to stop video after 30 seconds
+ * @date 26.11.2925 mk
  */
 void startTimer()
 {
@@ -100,6 +91,7 @@ void startTimer()
 /**
  * @author Rainer Müller-Knoche mk@muekno.de
  * @brief restarts the timer, if a key was pressed let the timeout start again
+ * @date 26.11.2925 mk
  */
 void reStartTimer()
 {
@@ -208,7 +200,7 @@ static lv_disp_drv_t disp_drv;
 
 /**
  * @author from Elecrow example
- *  
+ * @date 26.11.2925 mk
  */
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
@@ -233,6 +225,7 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
  * @param int posX (von rechts oben nach unten)
  * @param int posY (von rechts oben nach links) 
  * @param int schrift = 0 Size = 46 (default) schrift = 1 Size =24
+ * @date 26.11.2925 mk
  */
 void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 {
@@ -254,7 +247,9 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 /**
 * @author Rainer Müller-Knoche based on Elegrow example
 * @brief Anzeige Touch Position auf Monitor
+* @note firsttouched Flag for loop rein
 * call back ?
+ * @date 26.11.2925 mk
 */
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 {
@@ -291,6 +286,7 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 
 #include <keypad.h>
 
+// !!!!!!
 //client.connect(gateway, websockets_server_port, "/")
 
 
@@ -304,13 +300,22 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	const unsigned long pingInterval = 30000;   // Ping alle 30 Sekunden
 
 
-
+	/**
+	 * @author Gil Maimon
+	 * @brief callback from lib readme
+	 * @date 26.11.2025
+ 	 */
 	void onMessageCallback(WebsocketsMessage message)
 	{
     	Serial.print("Got Message: ");
     	Serial.println(message.data());
 	}
 
+	/**
+	 * @author Gil Maimon
+	 * @brief callback from lib readme
+	 * @date 26.11.2025
+ 	 */
 	void onEventsCallback(WebsocketsEvent event, String data)
 	{
 	    if(event == WebsocketsEvent::ConnectionOpened) {
@@ -325,15 +330,24 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	}
 
 
-	// SD CARD START
-// Function to trim whitespace from strings
+// SD CARD START
+/**
+ * @author someone on the net, Rainer Müller-Knoche mk@muekno.de
+ * @brief removes white space before and after a string
+ * @date 26.11.2025
+ */
 String trim(String str)
 {
   	str.trim();
   	return str;
 }
 
-// Function to read and parse config from SD
+/**
+ * @author someone on the net, Rainer Müller-Knoche mk@muekno.de
+ * @brief reads configuration from SD Card
+ * @brief SSID, Passwort, Websockserver IPAddress, PIN, Pinlength
+ * @date 26.11.2025
+ */
 bool loadConfigFromSD()
 {
 	if (!SD.begin(csPin))										// is SD card accessable
@@ -342,44 +356,36 @@ bool loadConfigFromSD()
     	return false;
   	}
   	Serial.println("SD card mounted");							// OK 
-
 	File myfile = SD.open("/config.txt");
   	if (!myfile)
 	{
 		Serial.println("Failed to open /config.txt");			// failed to open
 		return false;
 	}
-
 	Serial.println("read SD Card now");
-
   	while (myfile.available())
 	{
     	String line = myfile.readStringUntil('\n');				// read one line
-
 		Serial.println(line);									// and print
-
     	line = trim(line);										// remove white space front and end
     	if (line.length() == 0 || line.startsWith("#")) continue;  		// Skip empty or comments
-
     	int eqIndex = line.indexOf('=');						// find pos of '='
     	if (eqIndex == -1) continue;  							// Invalid line
-
     	String key = trim(line.substring(0, eqIndex));			// read key (befor =), store string in  key
     	String value = trim(line.substring(eqIndex + 1));		// read value (after =), store in vaue
-	
 	// dependend of key store to final variable
 		if (key == "ssid") ssid = value;
 		else if (key == "password") password = value;
 		else if (key == "ip")	localIP.fromString(value);
-		else if (key == "gateway") gateway = value;				// used for wsHost
+		else if (key == "gateway") gateway = value;				// gateway has the  same value
+																// as Websocket Server IP Addree
+																// we use it for wsHost IP address
 		else if (key == "subnet") subnet.fromString(value);
 		else if (key == "pin") pin = value;
 		else if (key == "laenge") laenge = value;;
     }
   	myfile.close();
-
 	Serial.println("got all closed file");
-
 	#ifdef DEBUG
 		Serial.println("SD Card readings");
 		Serial.print("D_ssid: ");Serial.println(ssid);
@@ -397,105 +403,90 @@ bool loadConfigFromSD()
 
 /**
  * @author Rainer Müller-Knoche mk@muekno.de
- * @brief setup function
+ * @brief setup functions
+ * @date26.11.2025
  */
 void setup()
 {
 	 Serial.begin(115200);				// Start Serial
 //	 while(!Serial){delay(100);}		// while loop blocks if no serial Monitor
 	delay(200);
+	pinMode(TFT_BL, OUTPUT);			// Backlight Control
+	digitalWrite(TFT_BL, LOW);			// BL OUT
+// watchdog now, may be not needed any more
+//	esp_task_wdt_init(5, true); 		// enable panic so ESP32 restarts
+//  esp_task_wdt_add(NULL); 			// add current thread to WDT watch
 
-	pinMode(TFT_BL, OUTPUT);		// Backlight Control
-	digitalWrite(TFT_BL, LOW);		// BL OUT
-
-// watchdog now
-//	esp_task_wdt_init(5, true); // enable panic so ESP32 restarts
-
-//  	esp_task_wdt_add(NULL); // add current thread to WDT watch
-
-	// Load config or use defaults
+// Get config or use defaults
 	Serial.println("get SD Card Values now");
-	delay(2000);
-
-  	if (!loadConfigFromSD())
+  	if (!loadConfigFromSD())			// should mever occur, but in case of as a backup
 	{
 		ssid = defaultSsid;	password = defaultPassword;	localIP = defaultIP;	subnet = defaultSubnet;
 		pin = defaultPin;	laenge = defaultLaenge;
 	}
 	Serial.println("Back from SD Card");
-	delay(2000);
-
-
 	#ifdef DEBUG
-
-	Serial.print("D_ssid: ");Serial.println(ssid);
-	Serial.print("D_password: ");Serial.println(password);
-	Serial.print("D_localIP: ");Serial.println(localIP);
-	Serial.print("D_gateway: ");Serial.println(gateway);
-	Serial.print("D_subnet: ");Serial.println(subnet);
-	Serial.print("D_pin: ");Serial.println(pin);
-	Serial.print("D_laenge: ");Serial.println(laenge);
+		Serial.print("D_ssid: ");Serial.println(ssid);
+		Serial.print("D_password: ");Serial.println(password);
+		Serial.print("D_localIP: ");Serial.println(localIP);
+		Serial.print("D_gateway: ");Serial.println(gateway);
+		Serial.print("D_subnet: ");Serial.println(subnet);
+		Serial.print("D_pin: ");Serial.println(pin);
+		Serial.print("D_laenge: ");Serial.println(laenge);
 	#endif
 
 	// Validate if necessary loaded
-  	if (ssid.isEmpty() || password.isEmpty() || pin.isEmpty()) // || (laenge.length() == 0) );
+	// warum geht die Abfrage der laenge nicht mit isEmty oder length nicht?
+	if (ssid.isEmpty() || password.isEmpty() || pin.isEmpty()) // || (laenge.length() == 0) );
   	{
 		#ifdef DEBUG
 			Serial.println("Incomplete config, using defaults");
 			Serial.println("set defaults");
 			Serial.println(defaultSsid);
 			Serial.println(defaultPassword);
+// !!!
 //			Serial.println(defaultWebsockets_server_host);
 		#endif
   	}
-
-	// convert 'laenge' and 'pin' 
+	// convert 'laenge' and 'pin' from ASCII (String) to binary 
 	pin_len = laenge[0] - '0';
-
+	// PIN now
 	for (int i= 0; i < pin_len;i++)
 	{
 		reference_code[i] = pin[i] - '0';
 		Serial.print(reference_code[i]);
 	}
-	
 	#ifdef DEBUG
 		Serial.println("\rSet Wifi to STA mode");
-	#endif
-
+		Serial.print("ssid: ");	Serial.println(ssid.c_str()); 
+		Serial.print("password: ");	Serial.println(password.c_str());
+		#endif
 	WiFi.begin(ssid.c_str(),password.c_str());				
 	// Wait mx 15 secondsome time to connect to wifi
 	for(int i = 0; i < 15 && WiFi.status() != WL_CONNECTED; i++)
 	{
 		Serial.print(".");
-		delay(1000);
+		delay(300);					// wait a little bit
 	}
-
-		#ifdef DEBUG
-			if (WiFi.status() == WL_CONNECTED)
-			{
-				Serial.println("\rWIFI CONNECTED");
-				Serial.println(WiFi.localIP());
-			}
-		#endif
-	
-	 // Setup Callbacks
+	#ifdef DEBUG
+		if (WiFi.status() == WL_CONNECTED)
+		{
+			Serial.println("\rWIFI CONNECTED");
+			Serial.println(WiFi.localIP());
+		}
+	#endif
+	 // from Maimons lib
     client.onMessage(onMessageCallback);				// for websockets
     client.onEvent(onEventsCallback);
 
-	// Init Display
-//	Serial.println("lcd next");
+// Init Display code is from Elecrow example
 	lcd.begin();
  	lcd.setTextSize(2);
-	delay(200);
-//	Serial.println("lv_init next");
-	lv_init();
-
 	delay(100);
-//	Serial.println("touch next"); the errors comes from here
+	lv_init();
 	touch_init();
 	screenWidth = lcd.width();
 	screenHeight = lcd.height();
-
 	lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, NULL, screenWidth * screenHeight / 10);
 	//lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, NULL, 480 * 272 / 10);
 	/* Initialize the display */
@@ -505,50 +496,51 @@ void setup()
 	disp_drv.ver_res = screenHeight;
 	disp_drv.flush_cb = my_disp_flush;						// touch callback
 	disp_drv.draw_buf = &draw_buf;
-
 	lv_disp_drv_register(&disp_drv);
-
 	/* Initialize the (dummy) input device driver */
 	static lv_indev_drv_t indev_drv;
 	lv_indev_drv_init(&indev_drv);
 	indev_drv.type = LV_INDEV_TYPE_POINTER;
 	indev_drv.read_cb = my_touchpad_read;
 	lv_indev_drv_register(&indev_drv);
-
 	lv_disp_drv_t disp_drv;
     // ... initialize disp_drv ...
-    //disp_drv.rotated = LV_DISP_ROT_90;
-	
 	lv_timer_handler();
-
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
-
-
 }	// End Setup
 
 unsigned long start = 0;
 unsigned long end = 0;
 
+/**
+ * @author Rainer Müller-Knoche
+ * @brief loop function doing the work
+ * @note checks flags and do the appropriate
+ * @date 26.11.2025
+ * @todo why is keypad not shown
+ */
 void loop()
 {
-	client.poll();
-	if (firstTouch)
+	client.poll();							// as of ArduinoWebsockets lib example
+	if (firstTouch)							// set if a touch is regitered
 	{
-		if (!firstTouchSeen)
+		if (!firstTouchSeen)				// it is the first Touch
 		{
-			firstTouchSeen = true;
-			digitalWrite(TFT_BL, HIGH);
-			create_buttons(1);					// keypad activ
-			startTimer();
-			Serial.println("TOUCHED");
+			firstTouchSeen = true;			// set first Touch flag
+			digitalWrite(TFT_BL, HIGH);		// switch on backlight
+			create_buttons(1);				// init and show keypad
+			startTimer();					// start a 30 second timer, to reset the
+											// display, if nothing mor happens
+			Serial.println("TOUCHED");		// just notice
 		}
-		if(pin_ok)
+		if(pin_ok)							// the entered PIN was correct
 		{
-			Serial.println("PIN OK");
-			pin_ok = false;
-			client.connect(gateway, 8888, "/");
-			client.send("Hello from ESP32 Client");
-			client.ping();
+			Serial.println("PIN OK");		// just notice
+			pin_ok = false;					// reset flag, to enter  only once 
+			client.connect(gateway, 8888, "/");			// try connect Websocket Server
+			// can we get a status?
+			client.send("Hello from ESP32 Client");		// send something
+			client.ping();								// send a ping
 		}
 
 	}
