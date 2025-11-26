@@ -1,4 +1,12 @@
-
+/**
+ * @author Rainer Müller-Knoche mk@muekno-de
+ * @brief this mdule creates a nummeric keypad using LVGL 8.3.6 number 1-9
+ * and a clear key which resets the the Display.
+ * Entering a Key will show an Asterisk below the keypad. If the max length
+ * of the entered PIN is reached, the entered PIN will be comparedto the given
+ * correct PIN. If equal a flag will be set for loop, otherwise the Display will ne reseted
+ * @date 26.11.2025 afternoon mk
+ */
 
 #include "my_globals.h"
 #include "main.h"
@@ -7,315 +15,216 @@
 
 #define  DEBUG
 // Konstanten für Tastenposition
-
 int col_1 = 400;//(480 -290)/2;
 int col_2 = col_1 - 100;
 int col_3 = col_2 - 100;
-
 int row_1 = 10;
 int row_2 = row_1 + 100; 
 int row_3 = row_2 + 100;
 int row_4 = row_3 + 100;
-
 int sizeX = 90;
 int sizeY = 90;
 bool failed = false;
-
 int loopPosX = 500;
 int loopPosY = 350;
 
 /**
  * @author Rainer Müller-Knoche
  * @date 09.11.2025 comments
- * @brief stores pressed key,  counts pressed keys, if the last key is pressed it compares  to the correct key
- * if Ok the flag for videon is set if not the system is restarted. the timeout timer to reset is resrarted
- * @param number the value of pressed key
+ * @brief stores pressed key,  counts pressed keys, if the last key (PIN length) is reached
+ * enter PIN is compared  to the correct PIN if Ok an OK flagis set for loop.
+ * Else the display is reseted. Ever key resets th 30 second timeout timer.
+ * @param number the value of pressed key.
+ * @date 26.11.2026
  */
 void check_pin(uint8_t number)
 {
 	reStartTimer();				// timeout verlängern Wenn eingabe
 	bool fails = false;			// default OK
-
 	#ifdef DEBUG
 		Serial.print("Eingabezaehler: ");				// zaehlt eingegeben Zeichen
 		Serial.println(eingabe_zaehler);
 		Serial.print("pin_len: ");				// zaehlt eingegeben Zeichen
 		Serial.println(pin_len);
-		#endif
-
-	// check for max
+	#endif
+	// check for max PIN length
 	if (eingabe_zaehler < pin_len)
 	{
 		// Timeout verlaengern wenn Taste gedrückt
 		reStartTimer();
 		// Kennung für Eingabe anzeigen unter KeyPad
 		// X ist fix Y wandert
-	 	char buffer[] = "*";
+	 	char buffer[] = "*";	// Astrisk as a feedbak
 		char* star = buffer;
 		print_msg(star,loopPosX, loopPosY - (100 * eingabe_zaehler),1);
-
 		#ifdef DEBUG
-			Serial.print("number: ");
-			Serial.println(number);
+			Serial.print("number: ");	Serial.println(number);
 		#endif
 
-		in_code[eingabe_zaehler] = number;		// Eingabe speichern
+		in_code[eingabe_zaehler] = number;		// tore entered key
 		eingabe_zaehler++;
 	}
-
-	if (eingabe_zaehler == pin_len)
+	if (eingabe_zaehler == pin_len)				// pin length reached
 	{
 		for (uint8_t i = 0;i < pin_len; i++)
 		{
-
 			#ifdef DEBUG
 				Serial.print("LOOP i: "); Serial.print(i); 	Serial.print(" IN_CODE: "); Serial.print(in_code[i]);
 				Serial.print(" REFERENCE_CODE: "); Serial.println(reference_code[i]);
 			#endif
-
 			if (reference_code[i] != in_code[i])
 			{
-
+// !!!!
 				#ifdef DEBUG
 					Serial.print("LOOP i "); Serial.print(i); Serial.println("  Not equal Abbruch");
 				#endif
-
 				fails = true;				// fehlerhafte Eingabe
 				i = pin_len + 1;			// force end, loopcount > mx
 			}
 		}
-		if 	(fails == false)				// pin was OK
+		if 	(fails == false)					// pin was OK, fails == false means no fail
 		{
 			#ifdef DEBUG
 				Serial.println("Correct");
 			#endif
-			
 			pin_ok = true;
-
 			lv_obj_t *scr = lv_scr_act();
-			lv_obj_clean(scr);				// Clear Screen
-
+			lv_obj_clean(scr);					// Clear Screen
 //			lv_obj_set_style_bg_color(scr,lv_palette_main(LV_PALETTE_GREEN),LV_PART_MAIN);
-
 		}
-		else
+		else									// fails was true PIN not correct
 		{
-			delay(500);
-			ESP.restart();
-
-			// failed = true;
-			// Serial.println("FAIL    ");
-			// pin_ok = false;
-			// lv_obj_t * scr = lv_scr_act();
-			// lv_obj_clean(scr);
-//			lv_obj_set_style_bg_color(scr,lv_palette_main(LV_PALETTE_RED),LV_PART_MAIN);
+			ESP.restart();						// reset the display
 		}
 	}
 }  // End check PIN
 
-
+/**
+ * @author Rainer Müller-Knoche mk@muekno.de
+ * @brief the following functions are callback for each possible key
+ * @brief they are called when the corresponding key is pressed
+ * @brief and call the check_pin function
+ * @param the correspondig  object * e
+ */
 // EINS CB
 static void eins_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t *eins_txt;
-		// eins_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(eins_txt, 400, 10);
-    	// lv_label_set_text(eins_txt, "*1");
-		// lv_obj_set_style_text_font(eins_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		
 		//Serial.println("1 pressed");
 		check_pin(1);
 	}
 }
-
 // ZWEI CB
 static void zwei_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t *zwei_txt;
-		// zwei_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(zwei_txt, 400, 100);
-		// lv_obj_set_style_text_font(zwei_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(zwei_txt, "*2");
-		Serial.println("2 pressed");
-		
 		check_pin(2);
 	}
 }
-
 // DREI CB
 static void drei_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t *drei_txt;
-		// drei_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(drei_txt, 400, 190);
-		// lv_obj_set_style_text_font(drei_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(drei_txt, "*3");
-		Serial.println("3 pressed");
-		uint8_t eingabe = 3;
-		check_pin(eingabe);
+		check_pin(3);
 	}
 }
-
 static void vier_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t * vier_txt;
-		// vier_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(vier_txt, 400, 280);
-		// lv_obj_set_style_text_font(vier_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(vier_txt, "*4");
-		Serial.println("4 pressed");
-		uint8_t eingabe = 4;
-		check_pin(eingabe);
+		check_pin(4);
 	}
 }
-
 static void fuenf_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t *fuenf_txt;
-		// fuenf_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(fuenf_txt, 400, 370);
-		// lv_obj_set_style_text_font(fuenf_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(fuenf_txt, "*5");
-		Serial.println("5 pressed");
-		uint8_t eingabe = 5;
-		check_pin(eingabe);
+		check_pin(5);
 	}
 }
-
 static void sechs_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED){
-		// lv_obj_t *sechs_txt;
-		// sechs_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(sechs_txt, 600, 10);
-		// lv_obj_set_style_text_font(sechs_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(sechs_txt, "*6");
-		Serial.println("6 pressed");
-		uint8_t eingabe = 6;
-		check_pin(eingabe);
+		check_pin(6);
 	}
 }
-
 static void sieben_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t *sieben_txt;
-		// sieben_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(sieben_txt, 600, 100);
-		// lv_obj_set_style_text_font(sieben_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(sieben_txt, "*7");
-		Serial.println("7 pressed");
-		uint8_t eingabe = 7;
-		check_pin(eingabe);
+		check_pin(7);
 	}
 }
-
 static void acht_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t *acht_txt;
-		// acht_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(acht_txt, 600, 190);
-		// lv_obj_set_style_text_font(acht_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(acht_txt, "*8");
 		Serial.println("8 pressed");
 		check_pin(8);
 	}
 }
-
 static void neun_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t *neun_txt;
-		// neun_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(neun_txt, 600, 270);
-		// lv_obj_set_style_text_font(neun_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(neun_txt, "*9");
 		Serial.println("9 pressed");
 		check_pin(9);
 	}
 }
-
 static void cl_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t *cl_txt;
-		// cl_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(cl_txt, 600, 360);
-		// lv_obj_set_style_text_font(cl_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(cl_txt, "*CL");
 		Serial.println("CL pressed");
 		delay(50);
 		ESP.restart();										// alle Eingaben vergessen
 	}
-
 }
-
 static void nullx_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t *nullx_txt;
-		// nullx_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(nullx_txt, 600, 450);
-		// lv_obj_set_style_text_font(nullx_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(nullx_txt, "*0");
 		Serial.println("0 pressed");
 		check_pin(0);
 	}
 }
-
-
+// not used yet
 static void ok_event(lv_event_t * e)
 {
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		// lv_obj_t *ok_txt;
-		// ok_txt = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(ok_txt, 500, 270);
-		// lv_obj_set_style_text_font(ok_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-		// lv_label_set_text(ok_txt, "*OK");
 		Serial.println("OK pressed");
-		// ok_func			// Ausfuehren wenn OK
 	}
 }
-
-
 /**
+ * @author Rainer Müller-Knoche mk@muekno.de
  * @brief 10er Tastatur erzuegen
- * @note erzeugt eine 10er Tastatur mit CLEAR und OK zur Eingabe einer PIN
- * Display ist in Landscape Tasten um 270 ° gedreht, damit in Portrait  Richtung eingebaut werden kann
+ * @note erzeugt eine 10er Tastatur mit CLEAR zur Eingabe einer PIN
+ * Display ist in Landscape Tasten um 270 ° gedreht, damit in Portrait Richtung eingebaut werden kann
  * Parameter farbe für Erweiterung
  * @param uint8_t farbe = 0 Option
+ * @date 26.11.2025 mk überarbeitet kommentiertes raus,kommentare aktualisiert
  */
 void create_buttons(uint8_t farbe)
 {
+	Serial.println("in create buttonns");
+	while(1){}
+
 	if (farbe < 10)
 	{
 		// Button EINS
@@ -328,7 +237,6 @@ void create_buttons(uint8_t farbe)
 		lv_label_set_text(l_eins, "1");									/*Set the labeks text*/
 		lv_obj_set_style_text_font(l_eins, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_obj_center(l_eins);
-		
 		// Button ZWEI
 		lv_obj_t * zwei = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(zwei, row_1, col_2);								/*Set its position*/
@@ -339,7 +247,6 @@ void create_buttons(uint8_t farbe)
 		lv_obj_set_style_text_font(l_zwei, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_zwei, "2");									/*Set the labeks text*/
 		lv_obj_center(l_zwei);
-
 		// Button DREI
 		lv_obj_t * drei = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(drei, row_1,col_3);								/*Set its position*/
@@ -350,7 +257,6 @@ void create_buttons(uint8_t farbe)
 		lv_obj_set_style_text_font(l_drei, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_drei, "3");									/*Set the labeks text*/
 		lv_obj_center(l_drei);
-
 		// Button VIER
 		lv_obj_t * vier = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(vier,row_2, col_1);								/*Set its position*/
@@ -361,7 +267,6 @@ void create_buttons(uint8_t farbe)
 		lv_obj_set_style_text_font(l_vier, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_vier, "4");									/*Set the labeks text*/
 		lv_obj_center(l_vier);
-
 		// Button FUENF
 		lv_obj_t * fuenf = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(fuenf, row_2, col_2);							/*Set its position*/
@@ -372,7 +277,6 @@ void create_buttons(uint8_t farbe)
 		lv_obj_set_style_text_font(l_fuenf, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_fuenf, "5");								/*Set the labeks text*/
 		lv_obj_center(l_fuenf);
-
 		// Button SECHS
 		lv_obj_t * sechs = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(sechs, row_2, col_3);							/*Set its position*/
@@ -383,7 +287,6 @@ void create_buttons(uint8_t farbe)
 		lv_obj_set_style_text_font(l_sechs, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_sechs, "6");								/*Set the labeks text*/
 		lv_obj_center(l_sechs);
-
 		// Button SIEBEN
 		lv_obj_t * sieben = lv_btn_create(lv_scr_act());				/*Add a button the current screen*/
 		lv_obj_set_pos(sieben, row_3, col_1);							/*Set its position*/
@@ -394,7 +297,6 @@ void create_buttons(uint8_t farbe)
 		lv_obj_set_style_text_font(l_sieben, &lv_font_montserrat_46, 0);/**Set the labels text*/
 		lv_label_set_text(l_sieben, "7");								/*Set the labeks text*/
 		lv_obj_center(l_sieben);
-
 		// Button ACHT
 		lv_obj_t * acht = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(acht, row_3, col_2);								/*Set its position*/
@@ -405,7 +307,6 @@ void create_buttons(uint8_t farbe)
 		lv_obj_set_style_text_font(l_acht, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_acht, "8");									/*Set the labeks text*/
 		lv_obj_center(l_acht);
-
 		// Button NEUN
 		lv_obj_t * neun = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(neun, row_3, col_3);								/*Set its position*/
@@ -416,7 +317,6 @@ void create_buttons(uint8_t farbe)
 		lv_obj_set_style_text_font(l_neun, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_neun, "9");									/*Set the labeks text*/
 		lv_obj_center(l_neun);
-
 		// Button CLEAR
 		lv_obj_t * clear = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(clear, row_4, col_1);							/*Set its position*/
@@ -427,7 +327,6 @@ void create_buttons(uint8_t farbe)
 		lv_obj_set_style_text_font(l_clear, &lv_font_montserrat_36, 0);	/**Set the labels text*/
 		lv_label_set_text(l_clear, "Clear");							/*Set the labeks text*/
 		lv_obj_center(l_clear);
-
 		// Button NULL
 		lv_obj_t * nullx = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(nullx, row_4, col_2);							/*Set its position*/
@@ -438,24 +337,17 @@ void create_buttons(uint8_t farbe)
 		lv_obj_set_style_text_font(l_nullx, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_label_set_text(l_nullx, "0");								/*Set the labeks text*/
 		lv_obj_center(l_nullx);
-
-		// Button OK
+		// Button OK not used yet
 		// lv_obj_t * okx = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		// lv_obj_set_pos(okx, row_4, col_3);								/*Set its position*/
 		// lv_obj_set_size(okx, sizeX, sizeY);								/*Set its size*/
 		// lv_obj_add_event_cb(okx, ok_event, LV_EVENT_ALL, NULL);			/*Assign a callback to the button*/
 		// lv_obj_set_style_transform_angle(okx, 2700, 0);
-
 		// //lv_obj_set_style_local_bg_color(okx, LV_BTN_MAIN, LV_STATE_DEFAULT, LV_COLOR_RED);
-		// lv_obj_t * l_okx = lv_label_create(okx);						/*Add a label to the button*/
-
+		// lv_obj_t * l_okx = lv_label_create(okx);							/*Add a label to the button*/
 		// lv_obj_set_style_text_font(l_okx, &lv_font_montserrat_46, 0);	/**Set the labels text*/
-
-		// //		lv_obj_set_style_text_color(l_okx,);
-
 		// lv_label_set_text(l_okx, "OK");									/*Set the labeks text*/
 		// lv_obj_center(l_okx);
 	}
-	// ok_func()														// kamera ein
-
+	// ok_func()															// kamera ein
 } // end create_buttons
