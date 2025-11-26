@@ -10,9 +10,16 @@
  * @date weiter 30.10.2025 .h verstanden Umbau
  * @date 01.11.2025 Schnauze voll alles zurück nach main.cpp
  * @date 09.11.2025 Branch nach msaster
+<<<<<<< HEAD
  * @date 12.11.2025 lv_conf.h + ports für Linux
  * Aktuelle Version 1.0.2
  * 
+=======
+ * Aktuelle Version 1.0.0
+ * @date 21.11.2025 neuer Branch Display as WEbsockets Client
+ * Neue Version 1.1.0
+ * @date 23.11.25 sd Card zurück in Main 
+>>>>>>> 96eb749 (vor Merge)
  */
 
 #include <Arduino.h>
@@ -23,10 +30,21 @@
 #include "my_globals.h"		// ehemals main.h
 #include <WiFi.h>       	// For WiFi AP
 #include <SD.h>         	// SD card library
+#include <FS.h>
 #include <SPI.h>        	// SPI for SD
-
 #include <lvgl.h>
 #include <FS.h>
+#include <keypad.h>
+
+#define DEBUG
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!
+//const char* websockets_server_host = "192.168.1.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
+// Websocket server details
+const uint16_t wsPort = 8888;					// Server port
+const uint16_t websockets_server_port = 8888;
+const char* wsPath = "/";						// Default path
+
 // #include <Adafruit_GFX.h>
 // #include <stdio.h>
 #include <LovyanGFX.hpp>
@@ -47,107 +65,6 @@
 #define SD_SCK 12
 #define SD_CS 10
 
-// Default values if SD read fails
-String defaultSSID = "ELECROW";
-String defaultPassword = "dummyPASS";               // Must be at least 8 chars for WPA2
-IPAddress defaultIP(192, 168, 4, 1);
-IPAddress defaultGateway(192, 168, 4, 1);
-IPAddress defaultSubnet(255, 255, 255, 0);
-String defaultPin = "5260";
-String defaultLaenge = "4";
-
-// Variables to store loaded config
-String ssid;
-String password;
-IPAddress localIP;
-IPAddress gateway;
-IPAddress subnet;
-String pin;
-String laenge;
-
-
-// === First get Config from SD Card ====
-const int csPin = 10;
-// Function to trim whitespace from strings
-String trim(String str)
-{
-  	str.trim();
-  	return str;
-}
-// Function to read and parse config from SD
-bool loadConfigFromSD()
-{
-
-//	Serial.begin(115200);			// Start Serial
-//	while(!Serial){delay(100);}
-	if (!SD.begin(csPin))										// is SD card accessable
-	{
-    	Serial.println("SD card mount failed");
-    	return false;
-  	}
-  	Serial.println("SD card mounted");							// OK i
-
-  	File file = SD.open("/config.txt");							// try open config file
-  	if (!file)
-	{
-		Serial.println("Failed to open /config.txt");			// failed to open
-		return false;
-	}
-
-  	while (file.available())
-	{
-    	String line = file.readStringUntil('\n');				// read one line
-
-		Serial.println(line);									// and print
-
-    	line = trim(line);										// remove white space front and end
-    	if (line.length() == 0 || line.startsWith("#")) continue;  		// Skip empty or comments
-
-    	int eqIndex = line.indexOf('=');						// find pos of '='
-    	if (eqIndex == -1) continue;  							// Invalid line
-
-    	String key = trim(line.substring(0, eqIndex));			// read key (befor =), store string in  key
-    	String value = trim(line.substring(eqIndex + 1));		// read value (after =), store in vaue
-	
-	// dependend of key store to final variable
-		if (key == "ssid") ssid = value;
-    	else if (key == "password") password = value;
-    	else if (key == "ip") localIP.fromString(value);
-    	else if (key == "gateway") gateway.fromString(value);
-    	else if (key == "subnet") subnet.fromString(value);
-    	else if (key == "pin") pin = value;
-    	else if (key == "laenge") laenge = value;
-    }
-  	file.close();
-
-  	// Validate if all were loaded
-  	if (pin.isEmpty() || laenge.isEmpty() || ssid.isEmpty() || password.isEmpty() || localIP == IPAddress(0,0,0,0) ||
-      gateway == IPAddress(0,0,0,0) || subnet == IPAddress(0,0,0,0)) 
-	{
-    	Serial.println("Incomplete config, using defaults");	// somethings missing
-    	return false;
-  	}
-	
-	// convert 'laenge' and 'pin' 
-	pin_len = laenge[0] - '0';
-
-	for (int i= 0; i < pin_len;i++)
-	{
-		reference_code[i] = pin[i] - '0';
-		Serial.print(reference_code[i]);
-	}
-	Serial.println("###################################################################");
-
-	#ifdef DEBUG
-	  	Serial.println("Config loaded: SSID=" + ssid + ", IP=" + localIP.toString());
-  		Serial.println(pin);
-  		Serial.println(laenge);
-	#endif
-	return true;
-	
-}
-// === SD Card END ===
-
 // === HW Timer Start ===
 
 	hw_timer_t *timer = NULL;
@@ -159,44 +76,24 @@ bool loadConfigFromSD()
 		ESP.restart();
 	}
 
-// === WD Timer Start ===
-
-	// hw_timer_t *timer1 = NULL;
-	
-	// void IRAM_ATTR onTimer1()
-	// {
-	// 	delay(50);
-	// 	//ESP.restart();
-	// }
-
+// ===  Timer Start ===
 
 /**
+ * @author Rainer Müller-Knoche mk@muekno.de
  * @brief  start a HW timer for 30 seconds
  * @note  needed fo backlight off if screen was touched but nothing done
  * or to to stop video after 30 seconds
  */
 void startTimer()
 {
-	Serial.println("startTimer");
 	timer = timerBegin(0, 80, true);
 	timerAttachInterrupt(timer, &onTimer, true);
 	timerAlarmWrite(timer, 30000000,false);
 	timerAlarmEnable(timer);
 }
 
-// void startTimer1()
-// {
-// 	Serial.println("startTimer1");
-// 	timer = timerBegin(1, 80, true);
-// 	timerAttachInterrupt(timer1, &onTimer1, true);
-// 	timerAlarmWrite(timer, 10000000,false);
-// 	timerAlarmEnable(timer1);
-// }
-
-
-
-
 /**
+ * @author Rainer Müller-Knoche mk@muekno.de
  * @brief restarts the timer, if a key was pressed let the timeout start again
  */
 void reStartTimer()
@@ -216,7 +113,7 @@ public:
 
 lgfx::Bus_RGB    	_bus_instance;
 lgfx::Panel_RGB  	_panel_instance;
-lgfx::Light_PWM 	_light_instance;
+//lgfx::Light_PWM 	_light_instance;
 lgfx::Touch_GT911	_touch_instance;
 LGFX(void)
 	{
@@ -272,8 +169,10 @@ LGFX(void)
 			cfg.memory_height = 480;
 			cfg.panel_width= 800;
 			cfg.panel_height = 480;
+
 			cfg.offset_x = 0;
 			cfg.offset_y = 0;
+
 			_panel_instance.config(cfg);
 		}
 		_panel_instance.setBus(&_bus_instance);
@@ -302,26 +201,26 @@ static lv_color_t disp_draw_buf[800 * 480 / 10];
 //static lv_color_t disp_draw_buf;
 static lv_disp_drv_t disp_drv;
 
-/* Display flushing */
+/**
+ * @author from Elecrow example
+ *  
+ */
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
 
 	uint32_t w = (area->x2 - area->x1 + 1);
 	uint32_t h = (area->y2 - area->y1 + 1);
 
-	//display.fillScreen(TFT_WHITE);
-#if (LV_COLOR_16_SWAP != 0)
-	lcd.pushImageDMA(area->x1, area->y1, w, h,(lgfx::rgb565_t*)&color_p->full);
-#else
+	//display.fillScreen(TFT_WHITE) ?;
 	lcd.pushImageDMA(area->x1, area->y1, w, h,(lgfx::rgb565_t*)&color_p->full);//
-#endif
 
 	lv_disp_flush_ready(disp);
-	 
 
 } // END my_disp_flush
 
+
 /**
+ * @author Rainer Müller-Knoche mk@muekno.de
  * @brief Anzeige einer Nachricht an Pos X,Y. 0,0 ist Display rechts oben. 
  * @note Achtung Display wird Portrait eingebaut ist aber Landscape orientiert.
  * @note Optionaler Paramter "schrift" für spaetere Auswertung
@@ -347,47 +246,27 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 	
 }
 
-lv_obj_t * time_msg;
-
-// Restzeit auf TFT anzeigen
-void print_time_rest(char message[], uint8_t clear_it = 0)
-{
-	if (clear_it == 0)
-	{
-		time_msg = lv_label_create(lv_scr_act());
-		lv_obj_set_pos(time_msg, 410, 220);
-		lv_obj_set_style_text_font(time_msg, &lv_font_montserrat_30, 0);	/**Set the labels text*/
-		//lv_obj_set_style_text_color(time_msg,TFT_GREEN);
-		lv_label_set_text(time_msg, message);
-	}
-	else
-	{
-		// time_msg = lv_label_create(lv_scr_act());
-		// lv_obj_set_pos(time_msg, 430, 220);
-		// lv_obj_set_style_text_font(time_msg, &lv_font_montserrat_36, 0);	/**Set the labels text*/
-		lv_label_set_text(time_msg, "");
-	}
-}
-
-bool touched = false;
-
-// Anzeige Touch Position auf Monitor
+/**
+* @author Rainer Müller-Knoche based on Elegrow example
+* @brief Anzeige Touch Position auf Monitor
+* call back ?
+*/
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 {
 	if (touch_has_signal())
 	{
 		if (touch_touched())
 		{
-			firstTouch = true;					// indicate for loop
+			firstTouch = true;					// MK indicate touched for loop
 			data->state = LV_INDEV_STATE_PR;
 			/*Set the coordinates*/
 			data->point.x = touch_last_x;
 			data->point.y = touch_last_y;
 
-			//#ifdef DEBUG
-			Serial.print("x: ");	Serial.println(touch_last_x);
-			Serial.print("y: ");	Serial.println(touch_last_y);
-			//#endif
+			#ifdef DEBUG
+				Serial.print("x: ");	Serial.println(touch_last_x);
+				Serial.print("y: ");	Serial.println(touch_last_y);
+			#endif
 
 		}
 		else if (touch_released())
@@ -407,62 +286,207 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 
 #include <keypad.h>
 
+//client.connect(gateway, websockets_server_port, "/")
+
 
 	// has to be outside any function
 	using namespace websockets;
-	WebsocketsServer server;
-
 	WebsocketsClient client;
 
-
-void setup()
-{
-	 Serial.begin(115200);			// Start Serial
-//	 while(!Serial){delay(100);}
-	delay(200);
-
-// watchdog now
-//	esp_task_wdt_init(5, true); // enable panic so ESP32 restarts
-//  	esp_task_wdt_add(NULL); // add current thread to WDT watch
+	unsigned long lastPing = 0;  				// Für periodische Pings
+	unsigned long lastDisconnect = 0; 			// Für Reconnect-Delay
+	const unsigned long reconnectDelay = 5000;  // 5 Sekunden warten vor Reconnect
+	const unsigned long pingInterval = 30000;   // Ping alle 30 Sekunden
 
 
-	// Serial.println("START SERIAL");
 
-	// Load config or use defaults
-  	if (!loadConfigFromSD())
+	void onMessageCallback(WebsocketsMessage message)
 	{
-		//ssid = defaultSSID;	password = defaultPassword;	localIP = defaultIP;	gateway = defaultGateway;	subnet = defaultSubnet;
-		//pin = defaultPin;	laenge = defaultLaenge;
+    	Serial.print("Got Message: ");
+    	Serial.println(message.data());
 	}
 
-  	// Start AP mode
-  	WiFi.mode(WIFI_AP);
-  	WiFi.softAP(ssid.c_str(), password.c_str());
-  	Serial.println("AP started with SSID: " + ssid);
-  	delay(100);  // Brief delay for AP init
+	void onEventsCallback(WebsocketsEvent event, String data)
+	{
+	    if(event == WebsocketsEvent::ConnectionOpened) {
+    	    Serial.println("Connnection Opened");
+    	} else if(event == WebsocketsEvent::ConnectionClosed) {
+        	Serial.println("Connnection Closed");
+    	} else if(event == WebsocketsEvent::GotPing) {
+        	Serial.println("Got a Ping!");
+    	} else if(event == WebsocketsEvent::GotPong) {
+        	Serial.println("Got a Pong!");
+    	}
+	}
 
-  	// Configure IP settings
-  	if (!WiFi.softAPConfig(localIP, gateway, subnet))
-  	{
-    	Serial.println("AP config failed");
-  	} else {
-    	Serial.println("AP config successful");
+
+	// SD CARD START
+// Function to trim whitespace from strings
+String trim(String str)
+{
+  	str.trim();
+  	return str;
+}
+
+// Function to read and parse config from SD
+bool loadConfigFromSD()
+{
+	if (!SD.begin(csPin))										// is SD card accessable
+	{
+    	Serial.println("SD card mount failed");
+    	return false;
   	}
-	delay(2000);
+  	Serial.println("SD card mounted");							// OK 
 
-  	// Print AP IP
-  	Serial.print("AP IP address: ");
-  	Serial.println(WiFi.softAPIP());
+	File myfile = SD.open("/config.txt");
+  	if (!myfile)
+	{
+		Serial.println("Failed to open /config.txt");			// failed to open
+		return false;
+	}
+
+	Serial.println("read SD Card now");
+
+  	while (myfile.available())
+	{
+    	String line = myfile.readStringUntil('\n');				// read one line
+
+		Serial.println(line);									// and print
+
+    	line = trim(line);										// remove white space front and end
+    	if (line.length() == 0 || line.startsWith("#")) continue;  		// Skip empty or comments
+
+    	int eqIndex = line.indexOf('=');						// find pos of '='
+    	if (eqIndex == -1) continue;  							// Invalid line
+
+    	String key = trim(line.substring(0, eqIndex));			// read key (befor =), store string in  key
+    	String value = trim(line.substring(eqIndex + 1));		// read value (after =), store in vaue
+	
+	// dependend of key store to final variable
+		if (key == "ssid") ssid = value;
+		else if (key == "password") password = value;
+		else if (key == "ip")	localIP.fromString(value);
+		else if (key == "gateway") gateway = value;				// used for wsHost
+		else if (key == "subnet") subnet.fromString(value);
+		else if (key == "pin") pin = value;
+		else if (key == "laenge") laenge = value;;
+    }
+  	myfile.close();
+
+	Serial.println("got all closed file");
+
+	#ifdef DEBUG
+		Serial.println("SD Card readings");
+		Serial.print("D_ssid: ");Serial.println(ssid);
+		Serial.print("D_pasword: ");Serial.println(password);
+		Serial.print("D_localIP: ");Serial.println(localIP);
+		Serial.print("D_gateway: ");Serial.println(gateway);		// wsHost
+		Serial.print("D_subnet: ");Serial.println(subnet);
+		Serial.print("D_pin: ");Serial.println(pin);
+		Serial.print("D_laenge: ");Serial.println(laenge);
+	#endif
+
+	return true;
+}
+	// SD CARD END
+
+/**
+ * @author Rainer Müller-Knoche mk@muekno.de
+ * @brief setup function
+ */
+void setup()
+{
+	 Serial.begin(115200);				// Start Serial
+//	 while(!Serial){delay(100);}		// while loop blocks if no serial Monitor
+	delay(200);
 
 	pinMode(TFT_BL, OUTPUT);		// Backlight Control
 	digitalWrite(TFT_BL, LOW);		// BL OUT
 
+// watchdog now
+//	esp_task_wdt_init(5, true); // enable panic so ESP32 restarts
+
+//  	esp_task_wdt_add(NULL); // add current thread to WDT watch
+
+	// Load config or use defaults
+	Serial.println("get SD Card Values now");
+	delay(2000);
+
+  	if (!loadConfigFromSD())
+	{
+		ssid = defaultSsid;	password = defaultPassword;	localIP = defaultIP;	subnet = defaultSubnet;
+		pin = defaultPin;	laenge = defaultLaenge;
+	}
+	Serial.println("Back from SD Card");
+	delay(2000);
+
+
+	#ifdef DEBUG
+
+	Serial.print("D_ssid: ");Serial.println(ssid);
+	Serial.print("D_password: ");Serial.println(password);
+	Serial.print("D_localIP: ");Serial.println(localIP);
+	Serial.print("D_gateway: ");Serial.println(gateway);
+	Serial.print("D_subnet: ");Serial.println(subnet);
+	Serial.print("D_pin: ");Serial.println(pin);
+	Serial.print("D_laenge: ");Serial.println(laenge);
+	#endif
+
+	// Validate if necessary loaded
+  	if (ssid.isEmpty() || password.isEmpty() || pin.isEmpty()) // || (laenge.length() == 0) );
+  	{
+		#ifdef DEBUG
+			Serial.println("Incomplete config, using defaults");
+			Serial.println("set defaults");
+			Serial.println(defaultSsid);
+			Serial.println(defaultPassword);
+//			Serial.println(defaultWebsockets_server_host);
+		#endif
+  	}
+
+	// convert 'laenge' and 'pin' 
+	pin_len = laenge[0] - '0';
+
+	for (int i= 0; i < pin_len;i++)
+	{
+		reference_code[i] = pin[i] - '0';
+		Serial.print(reference_code[i]);
+	}
+	
+	#ifdef DEBUG
+		Serial.println("\rSet Wifi to STA mode");
+	#endif
+
+	WiFi.begin(ssid.c_str(),password.c_str());				
+	// Wait mx 15 secondsome time to connect to wifi
+	for(int i = 0; i < 15 && WiFi.status() != WL_CONNECTED; i++)
+	{
+		Serial.print(".");
+		delay(1000);
+	}
+
+		#ifdef DEBUG
+			if (WiFi.status() == WL_CONNECTED)
+			{
+				Serial.println("\rWIFI CONNECTED");
+				Serial.println(WiFi.localIP());
+			}
+		#endif
+	
+	 // Setup Callbacks
+    client.onMessage(onMessageCallback);				// for websockets
+    client.onEvent(onEventsCallback);
+
 	// Init Display
+//	Serial.println("lcd next");
 	lcd.begin();
  	lcd.setTextSize(2);
 	delay(200);
+//	Serial.println("lv_init next");
 	lv_init();
+
 	delay(100);
+//	Serial.println("touch next"); the errors comes from here
 	touch_init();
 	screenWidth = lcd.width();
 	screenHeight = lcd.height();
@@ -494,23 +518,6 @@ void setup()
 
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
 
-	server.listen(8888);
-
-	//startTimer1();		//watchdog
-
-	#ifdef DEBUG
-		Serial.println();
-		Serial.print("Is server live ? ");
-		if (server.available())
-		{
-			Serial.println("yes");	/* code */
-		}
-		else
-		{
-			Serial.println("NO");
-		}
-	
-	#endif
 
 }	// End Setup
 
@@ -519,56 +526,32 @@ unsigned long end = 0;
 
 void loop()
 {
-	//esp_task_wdt_reset();						// WD reset	
-	//start = millis();
-	if (firstTouch)		// touch dedected BL on make keypad
+	client.poll();
+	if (firstTouch)
 	{
 		if (!firstTouchSeen)
 		{
-			Serial.println("first create");
-
-			firstTouchSeen = true;					// set flag to be here only once
-	
-			digitalWrite(2, HIGH); 					// BL ein
-			// if (no_buttons)						// set to high in my_globald.cpp
-			// {
+			firstTouchSeen = true;
+			digitalWrite(TFT_BL, HIGH);
 			create_buttons(1);					// keypad activ
-			no_buttons = false;					// set flag keypad on
-			startTimer();						// srart the timer
-		// 	}
+			startTimer();
+			Serial.println("TOUCHED");
 		}
-	}
-
-	// 	// Start the Viodo and the Timer only once
-	//start = millis();	
-	if (server.poll())
-  	{
-    	client = server.accept();
-  	}
-	//end = millis();
-  	if (client.available())
-  	{
-    	client.poll();
-	
-//		WebsocketsMessage msg = NULL;
-		WebsocketsMessage msg = client.readBlocking();
-
-		if (pin_ok)
+		if(pin_ok)
 		{
-			if (!video)
-			{
-				reStartTimer();			   							// restart timeout
-																	// video läuft noch nicht
-			}
-			video = true;											// flag video runs
-			lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
+			Serial.println("PIN OK");
+			pin_ok = false;
+			client.connect(gateway, 8888, "/");
+			client.send("Hello from ESP32 Client");
+			client.ping();
 		}
-		//end = millis();
+
 	}
+	//	lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
 
 	//Serial.println( end - start);
 
 	lv_timer_handler(); /* let the GUI do its work */
-//	delay(2);
+	//	delay(2);
 	// now2 = millis();
 }

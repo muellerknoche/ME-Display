@@ -24,8 +24,6 @@ bool failed = false;
 int loopPosX = 500;
 int loopPosY = 350;
 
-
-
 /**
  * @author Rainer Müller-Knoche
  * @date 09.11.2025 comments
@@ -41,7 +39,9 @@ void check_pin(uint8_t number)
 	#ifdef DEBUG
 		Serial.print("Eingabezaehler: ");				// zaehlt eingegeben Zeichen
 		Serial.println(eingabe_zaehler);
-	#endif
+		Serial.print("pin_len: ");				// zaehlt eingegeben Zeichen
+		Serial.println(pin_len);
+		#endif
 
 	// check for max
 	if (eingabe_zaehler < pin_len)
@@ -86,6 +86,10 @@ void check_pin(uint8_t number)
 		}
 		if 	(fails == false)				// pin was OK
 		{
+			#ifdef DEBUG
+				Serial.println("Correct");
+			#endif
+			
 			pin_ok = true;
 
 			lv_obj_t *scr = lv_scr_act();
@@ -139,6 +143,7 @@ static void zwei_event(lv_event_t * e)
 		// lv_obj_set_style_text_font(zwei_txt, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		// lv_label_set_text(zwei_txt, "*2");
 		Serial.println("2 pressed");
+		
 		check_pin(2);
 	}
 }
