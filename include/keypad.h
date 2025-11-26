@@ -47,7 +47,7 @@ static void acht_event(lv_event_t * e);
 static void neun_event(lv_event_t * e);
 static void cl_event(lv_event_t * e);
 static void nullx_event(lv_event_t * e);
-static void ok_event(lv_event_t * e);
+//static void ok_event(lv_event_t * e);
 
 void create_buttons(uint8_t farbe );
 

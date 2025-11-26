@@ -112,7 +112,7 @@ static void eins_event(lv_event_t * e)
 	lv_event_code_t code = lv_event_get_code(e);
 	if (code == LV_EVENT_CLICKED)
 	{
-		//Serial.println("1 pressed");
+		Serial.println("1 pressed");
 		check_pin(1);
 	}
 }
@@ -222,9 +222,6 @@ static void ok_event(lv_event_t * e)
  */
 void create_buttons(uint8_t farbe)
 {
-	Serial.println("in create buttonns");
-	while(1){}
-
 	if (farbe < 10)
 	{
 		// Button EINS
@@ -237,6 +234,9 @@ void create_buttons(uint8_t farbe)
 		lv_label_set_text(l_eins, "1");									/*Set the labeks text*/
 		lv_obj_set_style_text_font(l_eins, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_obj_center(l_eins);
+	Serial.println("in create buttons vor 2");
+	while(1){}
+
 		// Button ZWEI
 		lv_obj_t * zwei = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(zwei, row_1, col_2);								/*Set its position*/
