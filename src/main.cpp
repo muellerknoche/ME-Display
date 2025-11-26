@@ -19,7 +19,12 @@
  * @date 21.11.2025 neuer Branch Display as WEbsockets Client
  * Neue Version 1.1.0
  * @date 23.11.25 sd Card zurück in Main 
+<<<<<<< HEAD
 >>>>>>> 96eb749 (vor Merge)
+=======
+ * @date 26.11.15 vor 8:00 merge back to master
+ * 
+>>>>>>> eeeb1d9 (26.11.2025 after merge to master some comments)
  */
 
 #include <Arduino.h>
