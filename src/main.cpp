@@ -34,8 +34,6 @@
 #include <SD_Card.h>		// SDCARD einlesen
 #include <ArduinoWebsockets.h>
 
-
-
 //!!!!!!!!!!!!!!!!!!!!!!!!!
 //const char* websockets_server_host = "192.168.1.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
 // Websocket server details
@@ -43,26 +41,12 @@ const uint16_t wsPort = 8888;					// Server port
 const uint16_t websockets_server_port = 8888;
 const char* wsPath = "/";						// Default path
 
-// #include <Adafruit_GFX.h>
-// #include <stdio.h>
 #include <LovyanGFX.hpp>
 #include <TAMC_GT911.h>
-// #iclude <wire.h>
-// #include "esp_psram.h"
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 #include <ArduinoWebsockets.h>
 #include <esp_task_wdt.h>
-#define WDT_TIMEOUT 5			// 5 sekunden
-
-// === FIRST the SD card part====
-
-
-#define SD_MOSI 11
-#define SD_MISO 13
-#define SD_SCK 12
-#define SD_CS 10
-
 // === HW Timer Start ===
 
 	hw_timer_t *timer = NULL;
