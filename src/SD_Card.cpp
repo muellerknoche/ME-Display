@@ -1,9 +1,10 @@
 // SD CARD START
 /**
  * @author someone on the net, Rainer Müller-Knoche mk@muekno.de
- * @brief removes white space before and after a string
- * @date 26.11.2025
- * @date 27.11.2025 mk wieder augelagert
+ * @brief  Reading SD card to get config info
+ * @brief like SSID, PASSWORD, Websock server OP, coorect PIN , pin length
+ * @date 26.11.2025 
+ * @date 27.11.2025 mk SD wieder augelagert
  */
  #include <Arduino.h>
  #include <SD.h>
@@ -11,6 +12,14 @@
  #include <SPI.h>
 #include <my_globals.h>
 
+/**
+ * @fn String trim(String str)
+ * @author someone on the net
+ * @brief removes whitespace in fron and at ent of String
+ * @param String str to trim
+ * @returns trimed String
+ * @date 27.11.25 mk
+ */
 String trim(String str)
 {
   	str.trim();
@@ -22,7 +31,7 @@ String trim(String str)
  * @brief reads configuration from SD Card
  * @brief SSID, Passwort, Websockserver IPAddress, PIN, Pinlength
  * @date 26.11.2025
- * @date 27.11 2025 mk wieder ausgelagert
+ * @date 27.11 2025 mk SD wieder ausgelagert
  */
 bool loadConfigFromSD()
 {
@@ -73,5 +82,5 @@ bool loadConfigFromSD()
 		Serial.print("D_laenge: ");Serial.println(laenge);
 	#endif
     return true;
-} // END loadConfigFRomSD
+} // END loadConfigFRomSD/()
 // SD CARD END
