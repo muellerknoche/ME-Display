@@ -404,7 +404,9 @@ bool loadConfigFromSD()
 /**
  * @author Rainer Müller-Knoche mk@muekno.de
  * @brief setup functions
- * @date26.11.2025
+ * @date 26.11.2025 mk aufgeräumt
+ * @date 27.11.2025 mk indicator for WiFi connect or not 
+ * @brief disülay flash 3 times if no connect, 2 times if connect
  */
 void setup()
 {
@@ -416,7 +418,6 @@ void setup()
 // watchdog now, may be not needed any more
 //	esp_task_wdt_init(5, true); 		// enable panic so ESP32 restarts
 //  esp_task_wdt_add(NULL); 			// add current thread to WDT watch
-
 // Get config or use defaults
 	Serial.println("get SD Card Values now");
   	if (!loadConfigFromSD())			// should mever occur, but in case of as a backup
@@ -434,10 +435,10 @@ void setup()
 		Serial.print("D_pin: ");Serial.println(pin);
 		Serial.print("D_laenge: ");Serial.println(laenge);
 	#endif
-
 	// Validate if necessary loaded
 	// warum geht die Abfrage der laenge nicht mit isEmty oder length nicht?
-	if (ssid.isEmpty() || password.isEmpty() || pin.isEmpty()) // || (laenge.length() == 0) );
+
+//!!	if (ssid.isEmpty() || password.isEmpty() || pin.isEmpty()) // || (laenge.length() == 0) );
   	{
 		#ifdef DEBUG
 			Serial.println("Incomplete config, using defaults");
@@ -460,7 +461,8 @@ void setup()
 		Serial.println("\rSet Wifi to STA mode");
 		Serial.print("ssid: ");	Serial.println(ssid.c_str()); 
 		Serial.print("password: ");	Serial.println(password.c_str());
-		#endif
+		Serial.println("WiFi.begin(ssid.c_str(),password.c_str());");
+	#endif
 	WiFi.begin(ssid.c_str(),password.c_str());				
 	// Wait mx 15 secondsome time to connect to wifi
 	for(int i = 0; i < 15 && WiFi.status() != WL_CONNECTED; i++)
@@ -468,6 +470,37 @@ void setup()
 		Serial.print(".");
 		delay(300);					// wait a little bit
 	}
+	// indicate connect failed
+	if (WiFi.status() == WL_CONNECT_FAILED)
+	{
+		lcd.fillScreen(TFT_RED);
+		digitalWrite(2, HIGH);
+		delay(1000);
+		digitalWrite(2, LOW);
+		delay(500);
+		digitalWrite(2, HIGH);
+		delay(1000);
+		digitalWrite(2, LOW);
+		delay(500);
+		digitalWrite(2, HIGH);
+		delay(1000);
+		digitalWrite(2, LOW);
+		ESP.restart();
+	}
+	else 		// connected
+	{
+		lcd.fillScreen(TFT_GREEN);
+		lcd.setCursor(20,20);
+		lcd.print("connected");
+		digitalWrite(2, HIGH);
+		delay(1000);
+		digitalWrite(2, LOW);
+		delay(200);
+		digitalWrite(2, HIGH);
+		delay(1000);
+		digitalWrite(2, LOW);
+	}
+
 	#ifdef DEBUG
 		if (WiFi.status() == WL_CONNECTED)
 		{
