@@ -16,7 +16,8 @@
  * Neue Version 1.1.0
  * @date 23.11.25 sd Card zurück in Main 
  * @date 26.11.25 vor 8:00 merge back to master
- * @date 27.11.25  indicator for WiFi connect SD Card Stuff ausgelagert
+ * @date 27.11.25 mk indicator for WiFi connect SD Card Stuff ausgelagert
+ * @date 27.11.26 mk weitere Optik
  * @todo finish loop etc. 
  */
 
@@ -34,6 +35,13 @@
 #include <SD_Card.h>		// SDCARD einlesen
 #include <ArduinoWebsockets.h>
 
+#include <LovyanGFX.hpp>
+#include <TAMC_GT911.h>
+#include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
+#include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
+#include <ArduinoWebsockets.h>
+#include <esp_task_wdt.h>
+
 //!!!!!!!!!!!!!!!!!!!!!!!!!
 //const char* websockets_server_host = "192.168.1.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
 // Websocket server details
@@ -41,31 +49,28 @@ const uint16_t wsPort = 8888;					// Server port
 const uint16_t websockets_server_port = 8888;
 const char* wsPath = "/";						// Default path
 
-#include <LovyanGFX.hpp>
-#include <TAMC_GT911.h>
-#include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
-#include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
-#include <ArduinoWebsockets.h>
-#include <esp_task_wdt.h>
 // === HW Timer Start ===
-
+/**
+ * @note 30 seconds HW timer used for Timeout if keypad entry incomplete and Videotime
+ * @author Rainer Müller-Knoche mk@muekno.de
+ * @brief Callback function if timer ends
+ * @date 27.11.25 mk
+ * */
 	hw_timer_t *timer = NULL;
-	
 	void IRAM_ATTR onTimer()
 	{
-		Serial.println("30 sekunden Timer rrestart");
-		delay(2000);
+		Serial.println("30 sekunden Timer Restart");
+		delay(500);
 		ESP.restart();
 	}
-
-// ===  Timer Start ===
-
 /**
+ * @fn startTimer()
  * @author Rainer Müller-Knoche mk@muekno.de
  * @brief  start a HW timer for 30 seconds
  * @note  needed fo backlight off if screen was touched but nothing done
  * or to to stop video after 30 seconds
  * @date 26.11.2925 mk
+ * @date 27.11.2025 mk
  */
 void startTimer()
 {
@@ -74,23 +79,20 @@ void startTimer()
 	timerAlarmWrite(timer, 30000000,false);
 	timerAlarmEnable(timer);
 }
-
 /**
+ * @fn restartTimer()
  * @author Rainer Müller-Knoche mk@muekno.de
  * @brief restarts the timer, if a key was pressed let the timeout start again
- * @date 26.11.2925 mk
+ * @date 26.11.2025 mk
+ * @date 27.11.2025 mk
  */
 void reStartTimer()
 {
 	timerRestart(timer);
 }
-
-// === END TIMER ===
-
-//SPIClass SD_SPI;
+// === END TIMER FUNCTIONS ===
 
 #define TFT_BL 2
-
 
 class LGFX : public lgfx::LGFX_Device {
 public:
@@ -164,17 +166,13 @@ LGFX(void)
 	}
 };
 
-
 LGFX lcd;
 
 SPIClass& spi = SPI;
-
-
 /*******************************************************************************
 Please config the touch panel in touch.h
  ******************************************************************************/
 #include "touch.h"
-
 
 /* Change to your screen resolution */
 static uint32_t screenWidth;
@@ -185,24 +183,56 @@ static lv_color_t disp_draw_buf[800 * 480 / 10];
 static lv_disp_drv_t disp_drv;
 
 /**
- * @author from Elecrow example
+ * @fn Callback my_display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
+* @author from Elecrow example
  * @date 26.11.2925 mk
+ * @date 27.11.2025 mk Comment
  */
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
-
 	uint32_t w = (area->x2 - area->x1 + 1);
 	uint32_t h = (area->y2 - area->y1 + 1);
-
 	//display.fillScreen(TFT_WHITE) ?;
 	lcd.pushImageDMA(area->x1, area->y1, w, h,(lgfx::rgb565_t*)&color_p->full);//
-
 	lv_disp_flush_ready(disp);
-
 } // END my_disp_flush
-
-
 /**
+* @fn callback my_touchpad_read
+* @author Rainer Müller-Knoche based on Elegrow example
+* @brief Anzeige Touch Position auf Monitor
+* @note firsttouched Flag for loop rein
+ * @date 26.11.2025 mk
+ * @date 27.11.2025 mk Comment
+*/
+void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
+{
+	if (touch_has_signal())
+	{
+		if (touch_touched())
+		{
+			firstTouch = true;					// MK indicate touched for loop
+			data->state = LV_INDEV_STATE_PR;
+			/*Set the coordinates*/
+			data->point.x = touch_last_x;
+			data->point.y = touch_last_y;
+			#ifdef DEBUG
+				Serial.print("x: ");	Serial.println(touch_last_x);
+				Serial.print("y: ");	Serial.println(touch_last_y);
+			#endif
+		}
+		else if (touch_released())
+		{
+			data->state = LV_INDEV_STATE_REL;
+		}
+	}
+	else
+	{
+		data->state = LV_INDEV_STATE_REL;
+	}
+	//delay(15);
+} // END my_touchpad_read
+/**
+ * @fn print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
  * @author Rainer Müller-Knoche mk@muekno.de
  * @brief Anzeige einer Nachricht an Pos X,Y. 0,0 ist Display rechts oben. 
  * @note Achtung Display wird Portrait eingebaut ist aber Landscape orientiert.
@@ -211,7 +241,8 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
  * @param int posX (von rechts oben nach unten)
  * @param int posY (von rechts oben nach links) 
  * @param int schrift = 0 Size = 46 (default) schrift = 1 Size =24
- * @date 26.11.2925 mk
+ * @date 26.11.2025 mk
+ * @date 27.11.2025 mk Optik
  */
 void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 {
@@ -227,55 +258,11 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 		lv_obj_set_style_text_font(msg_text, &lv_font_montserrat_24, 0);	/**Set the labels text*/
 	}
 	lv_label_set_text(msg_text, message);
-	
 }
-
-/**
-* @author Rainer Müller-Knoche based on Elegrow example
-* @brief Anzeige Touch Position auf Monitor
-* @note firsttouched Flag for loop rein
-* call back ?
- * @date 26.11.2925 mk
-*/
-void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
-{
-	if (touch_has_signal())
-	{
-		if (touch_touched())
-		{
-			firstTouch = true;					// MK indicate touched for loop
-			data->state = LV_INDEV_STATE_PR;
-			/*Set the coordinates*/
-			data->point.x = touch_last_x;
-			data->point.y = touch_last_y;
-
-			#ifdef DEBUG
-				Serial.print("x: ");	Serial.println(touch_last_x);
-				Serial.print("y: ");	Serial.println(touch_last_y);
-			#endif
-
-		}
-		else if (touch_released())
-		{
-			data->state = LV_INDEV_STATE_REL;
-		}
-	}
-	else
-	{
-		data->state = LV_INDEV_STATE_REL;
-	}
-	//delay(15);
-} // END my_touchpad_read
-
-//lv_obj_t * my_disp;
-//lv_display_set_rotation(my_disp,90);
-
 #include <keypad.h>
 
 // !!!!!!
 //client.connect(gateway, websockets_server_port, "/")
-
-
 	// has to be outside any function
 	using namespace websockets;
 	WebsocketsClient client;
@@ -284,7 +271,6 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	unsigned long lastDisconnect = 0; 			// Für Reconnect-Delay
 	const unsigned long reconnectDelay = 5000;  // 5 Sekunden warten vor Reconnect
 	const unsigned long pingInterval = 30000;   // Ping alle 30 Sekunden
-
 
 	/**
 	 * @author Gil Maimon
@@ -296,7 +282,6 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
     	Serial.print("Got Message: ");
     	Serial.println(message.data());
 	}
-
 	/**
 	 * @author Gil Maimon
 	 * @brief callback from lib readme
@@ -314,15 +299,13 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
         	Serial.println("Got a Pong!");
     	}
 	}
-
-
-
 /**
+ * @fn stup()
  * @author Rainer Müller-Knoche mk@muekno.de
  * @brief setup functions
  * @date 26.11.2025 mk aufgeräumt
  * @date 27.11.2025 mk indicator for WiFi connect or not 
- * @brief disülay flash 3 times if no connect, 2 times if connect
+ * @brief display flash 3 times if no connect, 2 times if connect
  */
 void setup()
 {
@@ -331,12 +314,13 @@ void setup()
 	delay(200);
 	pinMode(TFT_BL, OUTPUT);			// Backlight Control
 	digitalWrite(TFT_BL, LOW);			// BL OUT
+	// !!!!
 // watchdog now, may be not needed any more
 //	esp_task_wdt_init(5, true); 		// enable panic so ESP32 restarts
 //  esp_task_wdt_add(NULL); 			// add current thread to WDT watch
 // Get config or use defaults
-	Serial.println("get SD Card Values now");
-  	if (!loadConfigFromSD())			// should mever occur, but in case of as a backup
+	Serial.println("get SD Card Values now"); 	// SD card is in SD_card.h and SD_Card.cppp  now
+  	if (!loadConfigFromSD())					// should mever occur, but in case of as a backup
 	{
 		ssid = defaultSsid;	password = defaultPassword;	localIP = defaultIP;	subnet = defaultSubnet;
 		pin = defaultPin;	laenge = defaultLaenge;
@@ -353,7 +337,6 @@ void setup()
 	#endif
 	// Validate if necessary loaded
 	// warum geht die Abfrage der laenge nicht mit isEmty oder length nicht?
-
 //!!	if (ssid.isEmpty() || password.isEmpty() || pin.isEmpty()) // || (laenge.length() == 0) );
   	{
 		#ifdef DEBUG
@@ -407,6 +390,7 @@ void setup()
 	{
 		lcd.fillScreen(lcd.color888(0,255,0));
 		lcd.setCursor(20,20);
+//!!!!
 		lcd.print("connected");
 		digitalWrite(2, HIGH);
 		delay(1000);
@@ -426,7 +410,7 @@ void setup()
 
 	//webSocket.begin("192.168.5.2", 8888, "/");
 	
-
+//!!!!!
 
 
 	 // from Maimons lib
@@ -465,19 +449,14 @@ void setup()
     // ... initialize disp_drv ...
 	lv_timer_handler();
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
-
-
 }	// End Setup
-
-unsigned long start = 0;
-unsigned long end = 0;
-
 /**
+ * @fn loop()
  * @author Rainer Müller-Knoche
  * @brief loop function doing the work
  * @note checks flags and do the appropriate
  * @date 26.11.2025
- * @todo why is keypad not shown
+ * @date 27.11,2025 keypad works lv_conf.h  was in wring place, did delete it
  */
 void loop()
 {
@@ -499,7 +478,6 @@ void loop()
 			pin_ok = false;					// reset flag, to enter  only once 
 			client.connect(gateway, 8888, "/");	
 			
-
 			// try connect Websocket Server
 			// can we get a status?
 			client.send("Hello from ESP32 Client");		// send something
