@@ -15,7 +15,8 @@
  * @date 21.11.2025 neuer Branch Display as WEbsockets Client
  * Neue Version 1.1.0
  * @date 23.11.25 sd Card zurück in Main 
- * @date 26.11.15 vor 8:00 merge back to master
+ * @date 26.11.25 vor 8:00 merge back to master
+ * @date 27.11.25  indicator for WiFi connect SD Card Stuff ausgelagert
  * @todo finish loop etc. 
  */
 
@@ -176,7 +177,6 @@ LGFX(void)
 		}
 		_panel_instance.setBus(&_bus_instance);
 		setPanel(&_panel_instance);
-
 	}
 };
 
