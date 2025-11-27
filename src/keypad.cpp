@@ -234,9 +234,6 @@ void create_buttons(uint8_t farbe)
 		lv_label_set_text(l_eins, "1");									/*Set the labeks text*/
 		lv_obj_set_style_text_font(l_eins, &lv_font_montserrat_46, 0);	/**Set the labels text*/
 		lv_obj_center(l_eins);
-	Serial.println("in create buttons vor 2");
-	while(1){}
-
 		// Button ZWEI
 		lv_obj_t * zwei = lv_btn_create(lv_scr_act());					/*Add a button the current screen*/
 		lv_obj_set_pos(zwei, row_1, col_2);								/*Set its position*/
