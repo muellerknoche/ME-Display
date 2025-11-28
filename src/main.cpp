@@ -42,7 +42,7 @@
 #include <ArduinoWebsockets.h>
 #include <esp_task_wdt.h>
 
-//!!!!!!!!!!!!!!!!!!!!!!!!!
+//!!!
 //const char* websockets_server_host = "192.168.1.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
 // Websocket server details
 const uint16_t wsPort = 8888;					// Server port
@@ -232,6 +232,24 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	//delay(15);
 } // END my_touchpad_read
 /**
+ * @fn flash()
+ * @author Rainer Müller-Knoche mk@muekno.de
+ * @brief make the EP CAM flash light blink
+ * @param uint16_t flashTime Time flashlight on in ms
+ * @param uint16_t foutTime Time flashlight off in ms
+ * @param uint8_t nTimes 
+ * @date 28.11.2025 
+ */
+void flash(uint16_t flashTime, uint16_t outTime, uint8_t nTimes)
+{
+	for (uint8_t i = 0; i < nTimes;i++)
+	{
+		digitalWrite(4,HIGH);
+		delay(flashTime);
+		digitalWrite(4,LOW);
+	}
+}
+/**
  * @fn print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
  * @author Rainer Müller-Knoche mk@muekno.de
  * @brief Anzeige einer Nachricht an Pos X,Y. 0,0 ist Display rechts oben. 
@@ -261,7 +279,7 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 }
 #include <keypad.h>
 
-// !!!!!!
+// !!!
 //client.connect(gateway, websockets_server_port, "/")
 	// has to be outside any function
 	using namespace websockets;
@@ -290,22 +308,24 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 	void onEventsCallback(WebsocketsEvent event, String data)
 	{
 	    if(event == WebsocketsEvent::ConnectionOpened) {
-    	    Serial.println("Connnection Opened");
+    	    Serial.println("On EventCb Connnection Opened");
     	} else if(event == WebsocketsEvent::ConnectionClosed) {
-        	Serial.println("Connnection Closed");
+        	Serial.println("On EventCb Connnection Closed");
     	} else if(event == WebsocketsEvent::GotPing) {
-        	Serial.println("Got a Ping!");
+        	Serial.println("On EventCb Got a Ping!");
     	} else if(event == WebsocketsEvent::GotPong) {
-        	Serial.println("Got a Pong!");
+        	Serial.println("On EventCb Got a Pong!");
     	}
 	}
 /**
- * @fn stup()
+ * @fn setup()
  * @author Rainer Müller-Knoche mk@muekno.de
  * @brief setup functions
  * @date 26.11.2025 mk aufgeräumt
  * @date 27.11.2025 mk indicator for WiFi connect or not 
  * @brief display flash 3 times if no connect, 2 times if connect
+ * @date 28.11.2025 mk
+ * @brief flash function added, 3 addititional flash in not connect to websocket
  */
 void setup()
 {
@@ -314,7 +334,7 @@ void setup()
 	delay(200);
 	pinMode(TFT_BL, OUTPUT);			// Backlight Control
 	digitalWrite(TFT_BL, LOW);			// BL OUT
-	// !!!!
+	// !!!
 // watchdog now, may be not needed any more
 //	esp_task_wdt_init(5, true); 		// enable panic so ESP32 restarts
 //  esp_task_wdt_add(NULL); 			// add current thread to WDT watch
@@ -373,53 +393,40 @@ void setup()
 	if (WiFi.status() == WL_CONNECT_FAILED)
 	{
 		lcd.fillScreen(lcd.color888(255,0,0)); // red
-		digitalWrite(2, HIGH);
-		delay(1000);
-		digitalWrite(2, LOW);
-		delay(500);
-		digitalWrite(2, HIGH);
-		delay(1000);
-		digitalWrite(2, LOW);
-		delay(500);
-		digitalWrite(2, HIGH);
-		delay(1000);
-		digitalWrite(2, LOW);
+		flash(1000, 500,3);						// flash 3 times
 		ESP.restart();
 	}
 	else 		// connected
 	{
 		lcd.fillScreen(lcd.color888(0,255,0));
 		lcd.setCursor(20,20);
-//!!!!
+//!!!
+		flash(100,200,2);						//  flash 2 times for OK
 		lcd.print("connected");
-		digitalWrite(2, HIGH);
-		delay(1000);
-		digitalWrite(2, LOW);
-		delay(200);
-		digitalWrite(2, HIGH);
-		delay(1000);
-		digitalWrite(2, LOW);
 	}
 	#ifdef DEBUG
 		if (WiFi.status() == WL_CONNECTED)
 		{
-			Serial.println("\rWIFI CONNECTED");
-			Serial.println(WiFi.localIP());
+			Serial.print("\rWIFI CONNECTED go IO: ");	Serial.println(WiFi.localIP());
 		}
 	#endif
-
-	//webSocket.begin("192.168.5.2", 8888, "/");
-	
-//!!!!!
-
-
+	// connect to Websock server now
+	Serial.print("Websock Server now on port: "); Serial.println("8888");
+	bool connected = client.connect(gateway, 8888, "/");
+	 if(connected) {
+    	Serial.print("Connected! ");	Serial.println("send Hello now");
+		client.send("Hello Server");
+    }
+	else
+	{    
+		flash(1000,200,3);						//  flash 3 times for failure
+		Serial.println("Not Connected!");
+    }
+    
+//!!A
 	 // from Maimons lib
     client.onMessage(onMessageCallback);				// for websockets
     client.onEvent(onEventsCallback);
-
-
-
-//	client.connect(gateway, 8888, "/");	
 
 // Init Display code is from Elecrow example
 	lcd.begin();
@@ -449,7 +456,7 @@ void setup()
     // ... initialize disp_drv ...
 	lv_timer_handler();
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
-}	// End Setup
+} // End Setup
 /**
  * @fn loop()
  * @author Rainer Müller-Knoche
@@ -457,6 +464,7 @@ void setup()
  * @note checks flags and do the appropriate
  * @date 26.11.2025
  * @date 27.11,2025 keypad works lv_conf.h  was in wring place, did delete it
+ * @date 28.11.2025 mk weiter
  */
 void loop()
 {
@@ -477,14 +485,14 @@ void loop()
 			Serial.println("PIN OK");		// just notice
 			pin_ok = false;					// reset flag, to enter  only once 
 			client.connect(gateway, 8888, "/");	
-			
 			// try connect Websocket Server
 			// can we get a status?
-			client.send("Hello from ESP32 Client");		// send something
-			client.ping();								// send a ping
+			client.send("START");			// send something
+			//client.ping();					// send a ping
 		}
 
 	}
+	// Receive jpg now and display it
 	//	lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
 
 	//Serial.println( end - start);
