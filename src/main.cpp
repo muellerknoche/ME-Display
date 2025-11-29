@@ -340,10 +340,16 @@ void setup()
 //  esp_task_wdt_add(NULL); 			// add current thread to WDT watch
 // Get config or use defaults
 	Serial.println("get SD Card Values now"); 	// SD card is in SD_card.h and SD_Card.cppp  now
+
   	if (!loadConfigFromSD())					// should mever occur, but in case of as a backup
 	{
 		ssid = defaultSsid;	password = defaultPassword;	localIP = defaultIP;	subnet = defaultSubnet;
 		pin = defaultPin;	laenge = defaultLaenge;
+		Serial.println("Something goes wrong");
+		while (1)
+		{
+			/* code */
+		}
 	}
 	Serial.println("Back from SD Card");
 	#ifdef DEBUG

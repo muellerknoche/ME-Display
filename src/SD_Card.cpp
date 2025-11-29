@@ -38,38 +38,44 @@ String trim(String str)
  * @date 26.11.2025
  * @date 27.11 2025 mk SD wieder ausgelagert
  */
+
+ #define DEBUG
+
 bool loadConfigFromSD()
 {
-	if (!SD.begin(csPin))										// is SD card accessable
+	Serial.println("start load from SD");
+	if (!SD.begin(csPin))											// is SD card accessable
 	{
     	Serial.println("SD card mount failed");
+		delay(2000);
     	return false;
   	}
-  	Serial.println("SD card mounted");							// OK 
+  	Serial.println("SD card mounted");								// OK 
 	File myfile = SD.open("/config.txt");
   	if (!myfile)
 	{
-		Serial.println("Failed to open /config.txt");			// failed to open
+		Serial.println("Failed to open /config.txt");				// failed to open
+		delay(2000);		
 		return false;
 	}
 	Serial.println("read SD Card now");
   	while (myfile.available())
 	{
-    	String line = myfile.readStringUntil('\n');				// read one line
-		Serial.println(line);									// and print
-    	line = trim(line);										// remove white space front and end
-    	if (line.length() == 0 || line.startsWith("#")) continue;  		// Skip empty or comments
-    	int eqIndex = line.indexOf('=');						// find pos of '='
-    	if (eqIndex == -1) continue;  							// Invalid line
-    	String key = trim(line.substring(0, eqIndex));			// read key (befor =), store string in  key
-    	String value = trim(line.substring(eqIndex + 1));		// read value (after =), store in vaue
+    	String line = myfile.readStringUntil('\n');					// read one line
+		Serial.println(line);										// and print
+    	line = trim(line);											// remove white space front and end
+    	if (line.length() == 0 || line.startsWith("#")) continue;  	// Skip empty or comments
+    	int eqIndex = line.indexOf('=');							// find pos of '='
+    	if (eqIndex == -1) continue;  								// Invalid line
+    	String key = trim(line.substring(0, eqIndex));				// read key (befor =), store string in  key
+    	String value = trim(line.substring(eqIndex + 1));			// read value (after =), store in vaue
 	// dependend of key store to final variable
 		if (key == "ssid") ssid = value;
 		else if (key == "password") password = value;
 		else if (key == "ip")	localIP.fromString(value);
-		else if (key == "gateway") gateway = value;				// gateway has the  same value
-																// as Websocket Server IP Addree
-																// we use it for wsHost IP address
+		else if (key == "gateway") gateway = value;					// gateway has the  same value
+																	// as Websocket Server IP Addree
+																	// we use it for wsHost IP address
 		else if (key == "subnet") subnet.fromString(value);
 		else if (key == "pin") pin = value;
 		else if (key == "laenge") laenge = value;;
