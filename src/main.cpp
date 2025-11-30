@@ -42,12 +42,7 @@
 #include <ArduinoWebsockets.h>
 #include <esp_task_wdt.h>
 
-//!!! sollte weg 
-//const char* websockets_server_host = "192.168.1.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
-// Websocket server details
-//const uint16_t wsPort = 8888;					// Server port
-//const uint16_t websockets_server_port = 8888;
-//const char* wsPath = "/";						// Default path
+const char* wsPath = "/";						// Default path
 
 // === HW Timer Start ===
 /**
@@ -60,8 +55,7 @@
 	void IRAM_ATTR onTimer()
 	{
 		Serial.println("30 sekunden Timer Restart");
-		//client.send("STOP");
-		delay(2000);
+		delay(500);
 		ESP.restart();
 	}
 /**
@@ -296,28 +290,10 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 	 * @brief callback from lib readme
 	 * @date 26.11.2025
  	 */
-	void onMessageCallback(WebsocketsMessage msg)
+	void onMessageCallback(WebsocketsMessage message)
 	{
     	Serial.print("Got Message: ");
-		if (msg.isBinary())
-		{
-			Serial.println("binary");
-			video = true;
-			const uint8_t* jpgData = (const uint8_t*)msg.c_str();  // Access binary data
-    		size_t jpgLen = msg.length();
-			lcd.drawJpg(jpgData, jpgLen, 0, 0);  // Draw at (0,0) - adjust as needed
-
-			// const uint8_t* jpgData = (const uint8_t*)msg.data().c_str();
-			// size_t jpgLen = msg.length();
-			// lcd.drawJpg(jpgData, jpgLen,  0,0);
-		}
-// 		else
-// 		{
-// 			Serial.println(msg);
-// 		}
-// //		video = true;
-//		lcd.drawJpg((const char *)message.data().c_str(), message.length(),0,0);
-		//Serial.println(message.data());
+    	Serial.println(message.data());
 	}
 	/**
 	 * @author Gil Maimon
@@ -375,18 +351,7 @@ void setup()
 		Serial.print("D_laenge: ");Serial.println(laenge);
 	#endif
 	// Validate if necessary loaded
-	// warum geht die Abfrage der laenge nicht mit isEmty oder length nicht?
-//!!	if (ssid.isEmpty() || password.isEmpty() || pin.isEmpty()) // || (laenge.length() == 0) );
-  	{
-		#ifdef DEBUG
-			Serial.println("Incomplete config, using defaults");
-			Serial.println("set defaults");
-			Serial.println(defaultSsid);
-			Serial.println(defaultPassword);
-// !!!
-//			Serial.println(defaultWebsockets_server_host);
-		#endif
-  	}
+	// gnze Abfrage raus, darf eh nie vorkommen, macht nur Ärger
 	// convert 'laenge' and 'pin' from ASCII (String) to binary 
 	pin_len = laenge[0] - '0';
 	// PIN now
@@ -411,18 +376,17 @@ void setup()
 	// indicate connect failed
 	if (WiFi.status() == WL_CONNECT_FAILED)
 	{
-		lcd.fillScreen(lcd.color888(255,0,0)); // red !!!
+		lcd.fillScreen(lcd.color888(255,0,0)); // red
 		flash(1000, 500,3);						// flash 3 times
 		ESP.restart();
 	}
 	else 		// connected
 	{
-		lcd.fillScreen(lcd.color888(0,255,0));		// green !!!
+		lcd.fillScreen(lcd.color888(0,255,0));
 		lcd.setCursor(20,20);
 //!!!
 		flash(100,200,2);						//  flash 2 times for OK
-		lcd.print("connected my IP ");			// !!!
-		Serial.print("Connectet myIP; ");	Serial.println(WiFi.localIP());
+		lcd.print("connected");
 	}
 	#ifdef DEBUG
 		if (WiFi.status() == WL_CONNECTED)
@@ -432,10 +396,9 @@ void setup()
 	#endif
 	// connect to Websock server now
 	Serial.print("Websock Server now on port: "); Serial.println("8888");
-	const char* wsServer = "ws://192.168.5.2:8888/";
-	 if (client.connect(wsServer))
-	 {
-    	Serial.println("Connected! ");
+	bool connected = client.connect(gateway, 8888, "/");
+	 if(connected) {
+    	Serial.print("Connected! ");	Serial.println("send Hello now");
 		client.send("Hello Server");
     }
 	else
@@ -511,6 +474,7 @@ void loop()
 			client.send("START");			// send something
 			//client.ping();					// send a ping
 		}
+
 	}
 	// Receive jpg now and display it
 	//	lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
