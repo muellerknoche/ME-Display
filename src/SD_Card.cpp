@@ -17,6 +17,8 @@
 #define SD_SCK 12
 #define SD_CS 10
 
+#define DEBUG
+
 /**
  * @fn String trim(String str)
  * @author someone on the net
