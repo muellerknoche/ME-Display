@@ -34,7 +34,7 @@
 #include <keypad.h>
 #include <SD_Card.h>		// SDCARD einlesen
 #include <ArduinoWebsockets.h>
-
+#include  <string>
 #include <LovyanGFX.hpp>
 #include <TAMC_GT911.h>
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
@@ -278,7 +278,7 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 //client.connect(gateway, websockets_server_port, "/")
 	// has to be outside any function
 	using namespace websockets;
-	WebsocketsClient client;
+	WebsocketsClient wsClient;
 
 	unsigned long lastPing = 0;  				// Für periodische Pings
 	unsigned long lastDisconnect = 0; 			// Für Reconnect-Delay
@@ -290,12 +290,24 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 	 * @brief callback from lib readme
 	 * @date 26.11.2025
  	 */
-	void onMessageCallback(WebsocketsMessage message)
+	void onMessageCallback(WebsocketsMessage msg)
 	{
     	Serial.print("Got Message: ");
-    	Serial.println(message.data());
-	}
-	/**
+		if (msg.isBinary())
+	 	{
+    		const uint8_t* jpgData = (const uint8_t*)msg.c_str();  // Access binary data
+    		size_t jpgLen = msg.length();
+			
+	    	//lcd.startWrite();  // Begin transaction for faster drawing
+    		lcd.drawJpg(jpgData, jpgLen, 0, 0);  // Draw at (0,0) - adjust position/size as needed
+    		//lcd.endWrite();    // End transaction
+  		}
+ 		 else
+  		{
+    		Serial.println("Received text: " + msg.data());
+  		}
+	}	
+		/**
 	 * @author Gil Maimon
 	 * @brief callback from lib readme
 	 * @date 26.11.2025
@@ -329,11 +341,6 @@ void setup()
 	delay(200);
 	pinMode(TFT_BL, OUTPUT);			// Backlight Control
 	digitalWrite(TFT_BL, LOW);			// BL OUT
-	// !!!
-// watchdog now, may be not needed any more
-//	esp_task_wdt_init(5, true); 		// enable panic so ESP32 restarts
-//  esp_task_wdt_add(NULL); 			// add current thread to WDT watch
-// Get config or use defaults
 	Serial.println("get SD Card Values now"); 	// SD card is in SD_card.h and SD_Card.cppp  now
   	if (!loadConfigFromSD())					// should mever occur, but in case of as a backup
 	{
@@ -353,6 +360,12 @@ void setup()
 	// Validate if necessary loaded
 	// gnze Abfrage raus, darf eh nie vorkommen, macht nur Ärger
 	// convert 'laenge' and 'pin' from ASCII (String) to binary 
+
+	std::string P1 = "ws://";
+	std::string P2 = gateway.c_str();
+	std::string P3 = ":8888/";
+	std::string PALL  = P1 + P2 + P3;
+	const char* wsServer = PALL.c_str();	//
 	pin_len = laenge[0] - '0';
 	// PIN now
 	for (int i= 0; i < pin_len;i++)
@@ -367,17 +380,24 @@ void setup()
 		Serial.println("WiFi.begin(ssid.c_str(),password.c_str());");
 	#endif
 	WiFi.begin(ssid.c_str(),password.c_str());				
-	// Wait mx 15 secondsome time to connect to wifi
+	// Wait max 15 secondsome time to connect to wifi
 	for(int i = 0; i < 15 && WiFi.status() != WL_CONNECTED; i++)
 	{
 		Serial.print(".");
-		delay(300);					// wait a little bit
+		delay(1000);					// wait a little bit
 	}
+	if (WiFi.status() != WL_CONNECTED)
+	{
+		Serial.println("WiFi FAIL");
+		delay(5000);
+	}
+
 	// indicate connect failed
 	if (WiFi.status() == WL_CONNECT_FAILED)
 	{
 		lcd.fillScreen(lcd.color888(255,0,0)); // red
-		flash(1000, 500,3);						// flash 3 times
+		delay(1000);
+		//flash(1000, 500,3);						// flash 3 times
 		ESP.restart();
 	}
 	else 		// connected
@@ -385,32 +405,26 @@ void setup()
 		lcd.fillScreen(lcd.color888(0,255,0));
 		lcd.setCursor(20,20);
 //!!!
-		flash(100,200,2);						//  flash 2 times for OK
+		//flash(100,200,2);						//  flash 2 times for OK
 		lcd.print("connected");
 	}
 	#ifdef DEBUG
 		if (WiFi.status() == WL_CONNECTED)
 		{
-			Serial.print("\rWIFI CONNECTED go IO: ");	Serial.println(WiFi.localIP());
+			Serial.print("\rWIFI CONNECTED got IP: ");	Serial.println(WiFi.localIP());
 		}
-	#endif
-	// connect to Websock server now
-	Serial.print("Websock Server now on port: "); Serial.println("8888");
-	bool connected = client.connect(gateway, 8888, "/");
-	 if(connected) {
-    	Serial.print("Connected! ");	Serial.println("send Hello now");
-		client.send("Hello Server");
-    }
+	#endif	// connect to Websock server now
+	Serial.print("Websock Server: "); Serial.println(wsServer);
+	if (wsClient.connect(wsServer))
+	{
+    	Serial.println("WebSocket connected");
+    	wsClient.onMessage(onMessageCallback);
+  	}
 	else
-	{    
-		flash(1000,200,3);						//  flash 3 times for failure
-		Serial.println("Not Connected!");
-    }
-    
-//!!A
-	 // from Maimons lib
-    client.onMessage(onMessageCallback);				// for websockets
-    client.onEvent(onEventsCallback);
+	{
+    	Serial.println("WebSocket connection failed");
+  	}
+	delay(1000);
 
 // Init Display code is from Elecrow example
 	lcd.begin();
@@ -452,26 +466,36 @@ void setup()
  */
 void loop()
 {
-	client.poll();							// as of ArduinoWebsockets lib example
-	if (firstTouch)							// set if a touch is regitered
+	std::string P1 = "ws://";
+	std::string P2 = gateway.c_str();
+	std::string P3 = ":8888/";
+	std::string PALL  = P1 + P2 + P3;
+	const char* wsServer = PALL.c_str();
+
+	wsClient.poll();							// as of ArduinoWebsockets lib example
+	if (firstTouch)								// set if a touch is regitered
 	{
-		if (!firstTouchSeen)				// it is the first Touch
+		if (!firstTouchSeen)					// it is the first Touch
 		{
-			firstTouchSeen = true;			// set first Touch flag
-			digitalWrite(TFT_BL, HIGH);		// switch on backlight
-			create_buttons(1);				// init and show keypad
-			startTimer();					// start a 30 second timer, to reset the
-											// display, if nothing mor happens
-			Serial.println("TOUCHED");		// just notice
+			firstTouchSeen = true;				// set first Touch flag
+			digitalWrite(TFT_BL, HIGH);			// switch on backlight
+			create_buttons(1);					// init and show keypad
+			startTimer();						// start a 30 second timer, to reset the
+												// display, if nothing mor happens
+			Serial.println("TOUCHED");			// just notice
 		}
-		if(pin_ok)							// the entered PIN was correct
+		if(pin_ok)								// the entered PIN was correct
 		{
-			Serial.println("PIN OK");		// just notice
-			pin_ok = false;					// reset flag, to enter  only once 
-			client.connect(gateway, 8888, "/");	
+			Serial.println("PIN OK");			// just notice
+			pin_ok = false;						// reset flag, to enter  only once 
+			Serial.println(wsServer);
 			// try connect Websocket Server
-			// can we get a status?
-			client.send("START");			// send something
+			if (!wsClient.connect(wsServer))
+			{
+				Serial.println("ws connect failed");
+				delay(2000);
+			}
+			wsClient.send("START");			// send something
 			//client.ping();					// send a ping
 		}
 
