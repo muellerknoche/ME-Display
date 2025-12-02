@@ -43,7 +43,7 @@
 #include "my_globals.h"
 
 //!!!
-//const char* websockets_server_host = "192.168.1.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
+const char* websockets_server_host = "192.168.50.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
 // Websocket server details
 const uint16_t wsPort = 8888;					// Server port
 const uint16_t websockets_server_port = 8888;
@@ -265,28 +265,6 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 	const unsigned long pingInterval = 30000;   // Ping alle 30 Sekunden
 
 	/**
-	 * @author Gil Maimon rainer Mülleer-Knoche mk@muekno.de
-	 * @brief callback from lib readme
-	 * @date 26.11.2025
-	 * @date 02.12.2025 JPEG Anzeige rein
- 	 */
-	void onMessageCallback(WebsocketsMessage msg)
-	{
-    	Serial.print("Got Message: ");
-		if (msg.isBinary())
-		{
-		    const uint8_t* jpgData = (const uint8_t*)msg.c_str();  // Access binary data
-    		size_t jpgLen = msg.length();
-		    //lcd.startWrite();  					// Begin transaction for faster drawing
-    		lcd.drawJpg(jpgData, jpgLen, 0, 0);  	// Draw at (0,0) - adjust position/size as needed
-    		//lcd.endWrite();    					// End transaction
-  		}
-  		else
-		{
-		    Serial.println("Received text: " + msg.data());
-		}
-	}
-	/**
 	 * @author Gil Maimon
 	 * @brief callback from lib readme
 	 * @date 26.11.2025
@@ -381,6 +359,40 @@ void setup()
 	{
 		Serial.print("WiFi Connected: myIP: ");	Serial.println(WiFi.localIP());
 	}
+
+
+    // try to connect to Websockets server
+	Serial.print("wsHost : "); Serial.println(websockets_server_host);
+	Serial.print("wsPort : "); Serial.println(websockets_server_port);
+	Serial.print("wsPath : "); Serial.println(wsPath);
+
+    bool connected = client.connect(websockets_server_host, websockets_server_port, wsPath);
+    if(connected) {
+        Serial.println("Connected!");
+        client.send("Hello Server");
+    } else {
+        Serial.println("websockServer Not Connected!");
+    }
+
+	// run callback when messages are received
+    client.onMessage([&](WebsocketsMessage msg)
+	{
+    	Serial.print("Got Message: ");
+		if (msg.isBinary())
+		{
+		    const uint8_t* jpgData = (const uint8_t*)msg.c_str();  // Access binary data
+    		size_t jpgLen = msg.length();
+		    //lcd.startWrite();  					// Begin transaction for faster drawing
+    		lcd.drawJpg(jpgData, jpgLen, 0, 0);  	// Draw at (0,0) - adjust position/size as needed
+    		//lcd.endWrite();    					// End transaction
+  		}
+  		else
+		{
+		    Serial.println("Received text: " + msg.data());
+		}
+	});
+
+
 
 	// Init Display
 	lcd.begin();
