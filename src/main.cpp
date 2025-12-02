@@ -26,7 +26,7 @@
 #define DEBUG				// comment for final
 #include <PCA9557.h>		// file copied from CowPanel github
 #include "my_globals.h"		// ehemals main.h
-#include <WiFi.h>       	// For WiFi AP
+#include <WiFi.h>       	// For WiFi 
 #include <SD.h>         	// SD card library
 #include <FS.h>
 #include <SPI.h>        	// SPI for SD
@@ -40,6 +40,7 @@
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 #include <ArduinoWebsockets.h>
+#include "my_globals.h"
 
 //!!!
 //const char* websockets_server_host = "192.168.1.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
@@ -48,20 +49,17 @@ const uint16_t wsPort = 8888;					// Server port
 const uint16_t websockets_server_port = 8888;
 const char* wsPath = "/";						// Default path
 
-// === HW Timer Start ===
-/**
- * @note 30 seconds HW timer used for Timeout if keypad entry incomplete and Videotime
- * @author Rainer Müller-Knoche mk@muekno.de
- * @brief Callback function if timer ends
- * @date 27.11.25 mk
- * */
-	hw_timer_t *timer = NULL;
-	void IRAM_ATTR onTimer()
-	{
-		Serial.println("30 sekunden Timer Restart");
-		delay(500);
-		ESP.restart();
-	}
+ // ===== START TIMER FUNCTIONS =====
+ hw_timer_t *timer;
+volatile bool timerFlag = false;
+
+// (ISR) Interrupt Service Routine
+void IRAM_ATTR onTimer()
+{
+	// This code is executed every time the timer alarm triggers
+  	timerFlag = true;
+	ESP.restart();
+}
 /**
  * @fn startTimer()
  * @author Rainer Müller-Knoche mk@muekno.de
@@ -74,9 +72,10 @@ const char* wsPath = "/";						// Default path
 void startTimer()
 {
 	timer = timerBegin(0, 80, true);
-	timerAttachInterrupt(timer, &onTimer, true);
-	timerAlarmWrite(timer, 30000000,false);
-	timerAlarmEnable(timer);
+	timerAttachInterrupt(timer, &onTimer, true);		// attach interrupt handler
+	timerAlarmWrite(timer, 30000000,false);				// For 30 seconds: 30 * 1000000 = 30000000 us
+														// false for one.shot
+	timerAlarmEnable(timer);							// enable Timer
 }
 /**
  * @fn restartTimer()
@@ -98,49 +97,47 @@ public:
 
 lgfx::Bus_RGB    	_bus_instance;
 lgfx::Panel_RGB  	_panel_instance;
-//lgfx::Light_PWM 	_light_instance;
-//lgfx::Touch_GT911	_touch_instance;
 LGFX(void)
 	{
 		{
 			auto cfg = _bus_instance.config();
 			cfg.panel = &_panel_instance;
-
+			// blau
 			cfg.pin_d0 = GPIO_NUM_8;	// B0
 			cfg.pin_d1 = GPIO_NUM_3;	// B1
 			cfg.pin_d2 = GPIO_NUM_46;	// B2
 			cfg.pin_d3 = GPIO_NUM_9;	// B3
 			cfg.pin_d4 = GPIO_NUM_1;	// B4
-
+			// grün
 			cfg.pin_d5 = GPIO_NUM_5;	// G0
 			cfg.pin_d6 = GPIO_NUM_6;	// G1
 			cfg.pin_d7 = GPIO_NUM_7;	// G2
 			cfg.pin_d8 = GPIO_NUM_15;	// G3
 			cfg.pin_d9 = GPIO_NUM_16;	// G4
+			// rot
 			cfg.pin_d10 = GPIO_NUM_4;	// G5
-
 			cfg.pin_d11 = GPIO_NUM_45;	// R0
 			cfg.pin_d12 = GPIO_NUM_48;	// R1
 			cfg.pin_d13 = GPIO_NUM_47;	// R2
 			cfg.pin_d14 = GPIO_NUM_21;	// R3
 			cfg.pin_d15 = GPIO_NUM_14;	// R4
-
+			// control
 			cfg.pin_henable = GPIO_NUM_40;
 			cfg.pin_vsync = GPIO_NUM_41;
 			cfg.pin_hsync = GPIO_NUM_39;
 			cfg.pin_pclk= GPIO_NUM_0;
 			cfg.freq_write= 15000000;
-
+			// 
 			cfg.hsync_polarity= 0;
 			cfg.hsync_front_porch = 8;
 			cfg.hsync_pulse_width = 4;
 			cfg.hsync_back_porch= 43;
-
+			//
 			cfg.vsync_polarity= 0;
 			cfg.vsync_front_porch = 8;
 			cfg.vsync_pulse_width = 4;
 			cfg.vsync_back_porch= 12;
-
+			//
 			cfg.pclk_active_neg = 1;
 			cfg.de_idle_high= 0;
 			cfg.pclk_idle_high= 0;
@@ -154,10 +151,8 @@ LGFX(void)
 			cfg.memory_height = 480;
 			cfg.panel_width= 800;
 			cfg.panel_height = 480;
-
 			cfg.offset_x = 0;
 			cfg.offset_y = 0;
-
 			_panel_instance.config(cfg);
 		}
 		_panel_instance.setBus(&_bus_instance);
@@ -172,7 +167,6 @@ SPIClass& spi = SPI;
 Please config the touch panel in touch.h
  ******************************************************************************/
 #include "touch.h"
-
 /* Change to your screen resolution */
 static uint32_t screenWidth;
 static uint32_t screenHeight;
@@ -215,8 +209,8 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 			data->point.x = touch_last_x;
 			data->point.y = touch_last_y;
 			#ifdef DEBUG
-				Serial.print("x: ");	Serial.println(touch_last_x);
-				Serial.print("y: ");	Serial.println(touch_last_y);
+				Serial.print("Data x : ");	Serial.println(touch_last_x);
+				Serial.print("Data y : ");	Serial.println(touch_last_y);
 			#endif
 		}
 		else if (touch_released())
@@ -232,24 +226,6 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 } // END my_touchpad_read
 PCA9557 Out;	// ver3 Out is PCA9557
 
-/**
- * @fn flash()
- * @author Rainer Müller-Knoche mk@muekno.de
- * @brief make the EP CAM flash light blink
- * @param uint16_t flashTime Time flashlight on in ms
- * @param uint16_t foutTime Time flashlight off in ms
- * @param uint8_t nTimes 
- * @date 28.11.2025 
- */
-void flash(uint16_t flashTime, uint16_t outTime, uint8_t nTimes)
-{
-	for (uint8_t i = 0; i < nTimes;i++)
-	{
-		digitalWrite(4,HIGH);
-		delay(flashTime);
-		digitalWrite(4,LOW);
-	}
-}
 /**
  * @fn print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
  * @author Rainer Müller-Knoche mk@muekno.de
@@ -280,9 +256,6 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 }
 #include <keypad.h>
 
-// !!!
-//client.connect(gateway, websockets_server_port, "/")
-	// has to be outside any function
 	using namespace websockets;
 	WebsocketsClient client;
 
@@ -292,15 +265,26 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 	const unsigned long pingInterval = 30000;   // Ping alle 30 Sekunden
 
 	/**
-	 * @author Gil Maimon
+	 * @author Gil Maimon rainer Mülleer-Knoche mk@muekno.de
 	 * @brief callback from lib readme
 	 * @date 26.11.2025
+	 * @date 02.12.2025 JPEG Anzeige rein
  	 */
-	void onMessageCallback(WebsocketsMessage message)
+	void onMessageCallback(WebsocketsMessage msg)
 	{
     	Serial.print("Got Message: ");
-		// Binary
-    	Serial.println(message.data());
+		if (msg.isBinary())
+		{
+		    const uint8_t* jpgData = (const uint8_t*)msg.c_str();  // Access binary data
+    		size_t jpgLen = msg.length();
+		    //lcd.startWrite();  					// Begin transaction for faster drawing
+    		lcd.drawJpg(jpgData, jpgLen, 0, 0);  	// Draw at (0,0) - adjust position/size as needed
+    		//lcd.endWrite();    					// End transaction
+  		}
+  		else
+		{
+		    Serial.println("Received text: " + msg.data());
+		}
 	}
 	/**
 	 * @author Gil Maimon
@@ -327,14 +311,14 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
  * @date 27.11.2025 mk indicator for WiFi connect or not 
  * @brief display flash 3 times if no connect, 2 times if connect
  * @date 28.11.2025 mk
- * @brief flash function added, 3 addititional flash in not connect to websocket
- */
+ * @date 02.12.2025 Anpassung  an Cropanal HW Ver 3.0
+ *  */
 void setup()
 {
 	 Serial.begin(115200);				// Start Serial
 //	 while(!Serial){delay(100);}		// while loop blocks if no serial Monitor
 	delay(200);
-	 Wire.begin(19,20);				// brauchen wir wohl nicht
+	 Wire.begin(19,20);					// brauchen wir wohl nicht
 	pinMode(TFT_BL, OUTPUT);			// Backlight Control
 	digitalWrite(TFT_BL, LOW);			// BL OUT
 
@@ -352,6 +336,7 @@ void setup()
 	Serial.println("get SD Card Values now"); 	// SD card is in SD_card.h and SD_Card.cppp  now
   	if (!loadConfigFromSD())					// should mever occur, but in case of as a backup
 	{
+		Serial.println("SD CARD PPOBLEM");
 		ssid = defaultSsid;	password = defaultPassword;	localIP = defaultIP;	subnet = defaultSubnet;
 		pin = defaultPin;	laenge = defaultLaenge;
 	}
@@ -365,19 +350,6 @@ void setup()
 		Serial.print("D_pin: ");Serial.println(pin);
 		Serial.print("D_laenge: ");Serial.println(laenge);
 	#endif
-	// Validate if necessary loaded
-	// warum geht die Abfrage der laenge nicht mit isEmty oder length nicht?
-//!!	if (ssid.isEmpty() || password.isEmpty() || pin.isEmpty()) // || (laenge.length() == 0) );
-  	{
-		#ifdef DEBUG
-			Serial.println("Incomplete config, using defaults");
-			Serial.println("set defaults");
-			Serial.println(defaultSsid);
-			Serial.println(defaultPassword);
-// !!!
-//			Serial.println(defaultWebsockets_server_host);
-		#endif
-  	}
 	// convert 'laenge' and 'pin' from ASCII (String) to binary 
 	pin_len = laenge[0] - '0';
 	// PIN now
@@ -392,6 +364,7 @@ void setup()
 		Serial.print("password: ");	Serial.println(password.c_str());
 		Serial.println("WiFi.begin(ssid.c_str(),password.c_str());");
 	#endif
+	WiFi.mode(WIFI_STA);
 	WiFi.begin(ssid.c_str(),password.c_str());				
 	// Wait mx 15 secondsome time to connect to wifi
 	for(int i = 0; i < 15 && WiFi.status() != WL_CONNECTED; i++)
@@ -402,76 +375,13 @@ void setup()
 	// indicate connect failed
 	if (WiFi.status() == WL_CONNECT_FAILED)
 	{
-		lcd.fillScreen(lcd.color888(255,0,0)); // red
-		flash(1000, 500,3);						// flash 3 times
 		ESP.restart();
 	}
 	else 		// connected
 	{
-		lcd.fillScreen(lcd.color888(0,255,0));
-		lcd.setCursor(20,20);
-//!!!
-		flash(100,200,2);						//  flash 2 times for OK
-		lcd.print("connected");
+		Serial.print("WiFi Connected: myIP: ");	Serial.println(WiFi.localIP());
 	}
-	#ifdef DEBUG
-  		Serial.print("AP started. IP Address: "); Serial.println(WiFi.softAPIP()); 
-	#endif
 
-  	// Start WebSocket server
-  	webSocketServer.begin();
-
-	#ifdef DEBUG
-	  	Serial.println("WebSocket server started");
-	#endif
-
-	// Set up WebSocket server event handler
-  	webSocketServer.onEvent([](uint8_t num, WStype_t type, uint8_t* payload, size_t length)
-	{
-    	switch (type)
-		{
-      		case WStype_DISCONNECTED:
-
-				#ifdef DEBUG
-					Serial.printf("Client [%u] disconnected\n", num);
-				#endif
-
-        		break;
-      		case WStype_CONNECTED:
-        		
-				#ifdef DEBUG
-					Serial.printf("Client [%u] connected\n", num);
-    	   		#endif
-				
-				// Send welcome message to client
-				if (pinOk)
-				{
-					webSocketServer.sendTXT(num, "video");
-					Serial.println("video sent");
-				}
-				else
-				{
-	        		webSocketServer.sendTXT(num, "From WebSocket Server!");
-				}
-        		break;
-      		case WStype_TEXT:
-        	
-				#ifdef DEBUG
-					Serial.printf("Message from client [%u]: %s\n", num, payload);
-				#endif
-
-        		// Echo message back to client
-        		//webSocketServer.sendTXT(num, payload, length);
-				webSocketServer.sendTXT(num, "XXX",3);
-        		break;
-      		default:
-        		break;
-    	}
-	});
- 
-
-	pinMode(TFT_BL, OUTPUT);		// Backlight Control
-	
 	// Init Display
 	lcd.begin();
 	lcd.fillScreen(TFT_BLACK);	//E
@@ -507,72 +417,41 @@ void setup()
 	lv_timer_handler();
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
 
-	//server.listen(8888);
-
-	// #ifdef DEBUG
-	// 	Serial.println();
-	// 	Serial.print("Is server live ? ");
-	// 	if (server.available())
-	// 	{
-	// 		Serial.println("yes");	/* code */
-	// 	}
-	// 	else
-	// 	{
-	// 		Serial.println("NO");
-	// 	}
-	
-	// 	Serial.println(server.available());
-	// 	Serial.println("-------------");
-	// 	//----------------------------------------
-	// 	Serial.println("Waiting for connection from ESP32-CAM (Client).");
-	// #endif
-	
-
-	// Just for Test
-	//digitalWrite(2, HIGH); 		// Display ein
-	//create_buttons(1);			// keypad activ
-	//no_buttons = false;
-
-	//timer = timerBegin(0, 80, true);
-	//timerAttachInterrupt(timer, &onTimer, true);
-	//timerAlarmWrite(timer, 30000000,false);
-	//timerAlarmEnable(timer);
-
-
-//	jetzt = millis();
-	//print_msg("Waiting for CAM ...",500, 10);
 }	// End Setup
 
 void loop()
 {
-	// Process WebSocket server events (handles new clients and messages non-blocking)
-//  	webSocketServer.loop();
-//	if (!pinOk)
-//	{
-//	}
-
-	if (touched && no_buttons)
+	client.poll(); // as of ArduinoWebsockets lib example
+	if (firstTouch) // set if a touch is regitered
 	{
-		touched = false;
-//		if (touch_touched())								// if display touched switch backlight on
-//		{
-			digitalWrite(2, HIGH); 							// backlight on
-			timer = timerBegin(0, 80, true);				// BL Timer erstellen
-			timerAttachInterrupt(timer, &onTimer, true);
-			timerAlarmWrite(timer, 60000000,false);			// 30 seconds
-			timerAlarmEnable(timer);
-			if (no_buttons)									// true on start
-			{
-				create_buttons(1);							// create keypad
-				no_buttons = false;							// set to false, indicate buttos on 
-			}  // end no_buttons
-//		} // end touched_touched
-//		now2 = millis();
-	} // end touched Flag
+		if (!firstTouchSeen) // it is the first Touch
+	{
+		firstTouchSeen = true; // set first Touch flag
+		digitalWrite(TFT_BL, HIGH); // switch on backlight
+		create_buttons(1); // init and show keypad
 
-	// Serial.println("lv_timer");
-	lv_timer_handler(); /* let the GUI do its work */
-	//delay(5);
-//	Serial.print(now1); Serial.print(" "); Serial.println(now2);
-	// now2 = millis();
+		startTimer(); // start a 30 second timer, to reset the
+		// display, if nothing mor happens
+		Serial.println("TOUCHED"); // just notice
+	}
+	if(pin_ok) // the entered PIN was correct
+	{
+		Serial.println("PIN OK"); // just notice
+		pin_ok = false; // reset flag, to enter only once
+//		client.connect(gateway, 8888, "/");
+		// try connect Websocket Server
+		// can we get a status?
+		client.send("stream"); // send something
+		//client.ping(); // send a ping
+	}
+
+}
+// Receive jpg now and display it
+// lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0); // it is from the LovyanGFX library and works fine
+
+//Serial.println( end - start);
+
+lv_timer_handler(); /* let the GUI do its work */
+// delay(2);
+// now2 = millis();
 }
