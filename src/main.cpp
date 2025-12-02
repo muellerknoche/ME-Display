@@ -24,7 +24,7 @@
 #include <Arduino.h>
 
 #define DEBUG				// comment for final
-#include "PCA9557.h"		// file copied from CowPanel github
+#include <PCA9557.h>		// file copied from CowPanel github
 #include "my_globals.h"		// ehemals main.h
 #include <WiFi.h>       	// For WiFi AP
 #include <SD.h>         	// SD card library
@@ -334,7 +334,7 @@ void setup()
 	 Serial.begin(115200);				// Start Serial
 //	 while(!Serial){delay(100);}		// while loop blocks if no serial Monitor
 	delay(200);
-	// Wire.begin(19,20);				// brauchen wir wohl nicht
+	 Wire.begin(19,20);				// brauchen wir wohl nicht
 	pinMode(TFT_BL, OUTPUT);			// Backlight Control
 	digitalWrite(TFT_BL, LOW);			// BL OUT
 
@@ -467,7 +467,7 @@ void setup()
 	lv_disp_drv_t disp_drv;
 #ifdef TFT_BL									//E
 	pinMode(TFT_BL, OUTPUT);					//E
-	digitalWrite(TFT_BL, HIGH);					//E
+	digitalWrite(TFT_BL, LOW);					//E
 #endif											//E
     // ... initialize disp_drv ...
 	lv_timer_handler();
