@@ -415,30 +415,64 @@ void setup()
 		lcd.print("connected");
 	}
 	#ifdef DEBUG
-		if (WiFi.status() == WL_CONNECTED)
-		{
-			Serial.print("\rWIFI CONNECTED go IO: ");	Serial.println(WiFi.localIP());
-		}
+  		Serial.print("AP started. IP Address: "); Serial.println(WiFi.softAPIP()); 
 	#endif
-	// connect to Websock server now
-	Serial.print("Websock Server now on port: "); Serial.println("8888");
-	bool connected = client.connect(gateway, 8888, "/");
-	 if(connected) {
-    	Serial.print("Connected! ");	Serial.println("send Hello now");
-		client.send("Hello Server");
-    }
-	else
-	{    
-		flash(1000,200,3);						//  flash 3 times for failure
-		Serial.println("Not Connected!");
-    }
-    
-//!!A
-	 // from Maimons lib
-    client.onMessage(onMessageCallback);				// for websockets
-    client.onEvent(onEventsCallback);
 
-// Init Display code is from Elecrow example
+  	// Start WebSocket server
+  	webSocketServer.begin();
+
+	#ifdef DEBUG
+	  	Serial.println("WebSocket server started");
+	#endif
+
+	// Set up WebSocket server event handler
+  	webSocketServer.onEvent([](uint8_t num, WStype_t type, uint8_t* payload, size_t length)
+	{
+    	switch (type)
+		{
+      		case WStype_DISCONNECTED:
+
+				#ifdef DEBUG
+					Serial.printf("Client [%u] disconnected\n", num);
+				#endif
+
+        		break;
+      		case WStype_CONNECTED:
+        		
+				#ifdef DEBUG
+					Serial.printf("Client [%u] connected\n", num);
+    	   		#endif
+				
+				// Send welcome message to client
+				if (pinOk)
+				{
+					webSocketServer.sendTXT(num, "video");
+					Serial.println("video sent");
+				}
+				else
+				{
+	        		webSocketServer.sendTXT(num, "From WebSocket Server!");
+				}
+        		break;
+      		case WStype_TEXT:
+        	
+				#ifdef DEBUG
+					Serial.printf("Message from client [%u]: %s\n", num, payload);
+				#endif
+
+        		// Echo message back to client
+        		//webSocketServer.sendTXT(num, payload, length);
+				webSocketServer.sendTXT(num, "XXX",3);
+        		break;
+      		default:
+        		break;
+    	}
+	});
+ 
+
+	pinMode(TFT_BL, OUTPUT);		// Backlight Control
+	
+	// Init Display
 	lcd.begin();
 	lcd.fillScreen(TFT_BLACK);	//E
 // 	lcd.setTextSize(2);			//E
@@ -472,48 +506,73 @@ void setup()
     // ... initialize disp_drv ...
 	lv_timer_handler();
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
-} // End Setup
-/**
- * @fn loop()
- * @author Rainer Müller-Knoche
- * @brief loop function doing the work
- * @note checks flags and do the appropriate
- * @date 26.11.2025
- * @date 27.11,2025 keypad works lv_conf.h  was in wring place, did delete it
- * @date 28.11.2025 mk weiter
- */
+
+	//server.listen(8888);
+
+	// #ifdef DEBUG
+	// 	Serial.println();
+	// 	Serial.print("Is server live ? ");
+	// 	if (server.available())
+	// 	{
+	// 		Serial.println("yes");	/* code */
+	// 	}
+	// 	else
+	// 	{
+	// 		Serial.println("NO");
+	// 	}
+	
+	// 	Serial.println(server.available());
+	// 	Serial.println("-------------");
+	// 	//----------------------------------------
+	// 	Serial.println("Waiting for connection from ESP32-CAM (Client).");
+	// #endif
+	
+
+	// Just for Test
+	//digitalWrite(2, HIGH); 		// Display ein
+	//create_buttons(1);			// keypad activ
+	//no_buttons = false;
+
+	//timer = timerBegin(0, 80, true);
+	//timerAttachInterrupt(timer, &onTimer, true);
+	//timerAlarmWrite(timer, 30000000,false);
+	//timerAlarmEnable(timer);
+
+
+//	jetzt = millis();
+	//print_msg("Waiting for CAM ...",500, 10);
+}	// End Setup
+
 void loop()
 {
-	client.poll();							// as of ArduinoWebsockets lib example
-	if (firstTouch)							// set if a touch is regitered
+	// Process WebSocket server events (handles new clients and messages non-blocking)
+//  	webSocketServer.loop();
+//	if (!pinOk)
+//	{
+//	}
+
+	if (touched && no_buttons)
 	{
-		if (!firstTouchSeen)				// it is the first Touch
-		{
-			firstTouchSeen = true;			// set first Touch flag
-			digitalWrite(TFT_BL, HIGH);		// switch on backlight
-			create_buttons(1);				// init and show keypad
-			startTimer();					// start a 30 second timer, to reset the
-											// display, if nothing mor happens
-			Serial.println("TOUCHED");		// just notice
-		}
-		if(pin_ok)							// the entered PIN was correct
-		{
-			Serial.println("PIN OK");		// just notice
-			pin_ok = false;					// reset flag, to enter  only once 
-			client.connect(gateway, 8888, "/");	
-			// try connect Websocket Server
-			// can we get a status?
-			client.send("START");			// send something
-			//client.ping();					// send a ping
-		}
+		touched = false;
+//		if (touch_touched())								// if display touched switch backlight on
+//		{
+			digitalWrite(2, HIGH); 							// backlight on
+			timer = timerBegin(0, 80, true);				// BL Timer erstellen
+			timerAttachInterrupt(timer, &onTimer, true);
+			timerAlarmWrite(timer, 60000000,false);			// 30 seconds
+			timerAlarmEnable(timer);
+			if (no_buttons)									// true on start
+			{
+				create_buttons(1);							// create keypad
+				no_buttons = false;							// set to false, indicate buttos on 
+			}  // end no_buttons
+//		} // end touched_touched
+//		now2 = millis();
+	} // end touched Flag
 
-	}
-	// Receive jpg now and display it
-	//	lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0);  // it is from the LovyanGFX library  and works  fine
-
-	//Serial.println( end - start);
-
+	// Serial.println("lv_timer");
 	lv_timer_handler(); /* let the GUI do its work */
-	//	delay(2);
+	//delay(5);
+//	Serial.print(now1); Serial.print(" "); Serial.println(now2);
 	// now2 = millis();
 }
