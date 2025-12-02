@@ -18,13 +18,13 @@
  * @date 26.11.25 vor 8:00 merge back to master
  * @date 27.11.25 mk indicator for WiFi connect SD Card Stuff ausgelagert
  * @date 27.11.26 mk weitere Optik
- * @todo finish loop etc. 
+ * @date 02.12.2025 mk Anpssungen an HW 3.0
  */
 
 #include <Arduino.h>
 
 #define DEBUG				// comment for final
-
+#include "PCA9557.h"		// file copied from CowPanel github
 #include "my_globals.h"		// ehemals main.h
 #include <WiFi.h>       	// For WiFi AP
 #include <SD.h>         	// SD card library
@@ -36,11 +36,10 @@
 #include <ArduinoWebsockets.h>
 
 #include <LovyanGFX.hpp>
-#include <TAMC_GT911.h>
+//#include <TAMC_GT911.h>
 #include <lgfx/v1/platforms/esp32s3/Panel_RGB.hpp>
 #include <lgfx/v1/platforms/esp32s3/Bus_RGB.hpp>
 #include <ArduinoWebsockets.h>
-#include <esp_task_wdt.h>
 
 //!!!
 //const char* websockets_server_host = "192.168.1.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
@@ -100,7 +99,7 @@ public:
 lgfx::Bus_RGB    	_bus_instance;
 lgfx::Panel_RGB  	_panel_instance;
 //lgfx::Light_PWM 	_light_instance;
-lgfx::Touch_GT911	_touch_instance;
+//lgfx::Touch_GT911	_touch_instance;
 LGFX(void)
 	{
 		{
@@ -184,7 +183,7 @@ static lv_disp_drv_t disp_drv;
 
 /**
  * @fn Callback my_display_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
-* @author from Elecrow example
+ * @author from Elecrow example
  * @date 26.11.2925 mk
  * @date 27.11.2025 mk Comment
  */
@@ -229,8 +228,10 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 	{
 		data->state = LV_INDEV_STATE_REL;
 	}
-	//delay(15);
+	delay(15); // ver3
 } // END my_touchpad_read
+PCA9557 Out;	// ver3 Out is PCA9557
+
 /**
  * @fn flash()
  * @author Rainer Müller-Knoche mk@muekno.de
@@ -298,6 +299,7 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
 	void onMessageCallback(WebsocketsMessage message)
 	{
     	Serial.print("Got Message: ");
+		// Binary
     	Serial.println(message.data());
 	}
 	/**
@@ -332,13 +334,21 @@ void setup()
 	 Serial.begin(115200);				// Start Serial
 //	 while(!Serial){delay(100);}		// while loop blocks if no serial Monitor
 	delay(200);
+	// Wire.begin(19,20);				// brauchen wir wohl nicht
 	pinMode(TFT_BL, OUTPUT);			// Backlight Control
 	digitalWrite(TFT_BL, LOW);			// BL OUT
-	// !!!
-// watchdog now, may be not needed any more
-//	esp_task_wdt_init(5, true); 		// enable panic so ESP32 restarts
-//  esp_task_wdt_add(NULL); 			// add current thread to WDT watch
-// Get config or use defaults
+
+	// for Ver 3.0
+	Out.reset();
+	Out.setMode(IO_OUTPUT);
+	Out.setState(IO0, IO_LOW);
+  	Out.setState(IO1, IO_LOW);
+  	delay(20);
+  	Out.setState(IO0, IO_HIGH);
+  	delay(100);
+  	Out.setMode(IO1, IO_INPUT);
+	// end for Ver 3.0
+
 	Serial.println("get SD Card Values now"); 	// SD card is in SD_card.h and SD_Card.cppp  now
   	if (!loadConfigFromSD())					// should mever occur, but in case of as a backup
 	{
@@ -430,9 +440,11 @@ void setup()
 
 // Init Display code is from Elecrow example
 	lcd.begin();
- 	lcd.setTextSize(2);
-	delay(100);
+	lcd.fillScreen(TFT_BLACK);	//E
+// 	lcd.setTextSize(2);			//E
+	delay(200);					//E
 	lv_init();
+	delay(100);					//E
 	touch_init();
 	screenWidth = lcd.width();
 	screenHeight = lcd.height();
@@ -453,6 +465,10 @@ void setup()
 	indev_drv.read_cb = my_touchpad_read;
 	lv_indev_drv_register(&indev_drv);
 	lv_disp_drv_t disp_drv;
+#ifdef TFT_BL									//E
+	pinMode(TFT_BL, OUTPUT);					//E
+	digitalWrite(TFT_BL, HIGH);					//E
+#endif											//E
     // ... initialize disp_drv ...
 	lv_timer_handler();
 // lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
