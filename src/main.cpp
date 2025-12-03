@@ -18,7 +18,11 @@
  * @date 26.11.25 vor 8:00 merge back to master
  * @date 27.11.25 mk indicator for WiFi connect SD Card Stuff ausgelagert
  * @date 27.11.26 mk weitere Optik
- * @date 02.12.2025 mk Anpssungen an HW 3.0
+ * @date 02.12.2025 mk Anpssungen an HW 3.0 brachte nichts
+ * @date 03.12.2025 mk KeyPad größer für Wurstfinger
+ * neue Version 1.2.0
+ * Connect geht Hardcoded aber noch kein Bild
+ * 
  */
 
 #include <Arduino.h>
@@ -43,7 +47,7 @@
 #include "my_globals.h"
 
 //!!!
-const char* websockets_server_host = "192.168.50.1"; //--> Use the IP address in the "local_ip" variable in the ESP32 TFT LCD (server) program code.
+const char* websockets_server_host = "192.168.50.1"; //--> Use the IP address in the "local_ip" .
 // Websocket server details
 const uint16_t wsPort = 8888;					// Server port
 const uint16_t websockets_server_port = 8888;
@@ -296,7 +300,10 @@ void setup()
 	 Serial.begin(115200);				// Start Serial
 //	 while(!Serial){delay(100);}		// while loop blocks if no serial Monitor
 	delay(200);
-	 Wire.begin(19,20);					// brauchen wir wohl nicht
+	Serial.println();
+	Serial.println("03.12.2025 ME-Display Ver. 1.2.0");
+	Serial.println();
+	Wire.begin(19,20);					// brauchen wir wohl nicht
 	pinMode(TFT_BL, OUTPUT);			// Backlight Control
 	digitalWrite(TFT_BL, LOW);			// BL OUT
 
@@ -360,13 +367,13 @@ void setup()
 		Serial.print("WiFi Connected: myIP: ");	Serial.println(WiFi.localIP());
 	}
 
-
     // try to connect to Websockets server
 	Serial.print("wsHost : "); Serial.println(websockets_server_host);
 	Serial.print("wsPort : "); Serial.println(websockets_server_port);
 	Serial.print("wsPath : "); Serial.println(wsPath);
 
-    bool connected = client.connect(websockets_server_host, websockets_server_port, wsPath);
+//	const char* websockets_server_host = "192.168.50.1"; //Enter server adress
+    bool connected = client.connect("ws://192.168.50.1:8888/");
     if(connected) {
         Serial.println("Connected!");
         client.send("Hello Server");
@@ -391,8 +398,6 @@ void setup()
 		    Serial.println("Received text: " + msg.data());
 		}
 	});
-
-
 
 	// Init Display
 	lcd.begin();
@@ -437,27 +442,33 @@ void loop()
 	if (firstTouch) // set if a touch is regitered
 	{
 		if (!firstTouchSeen) // it is the first Touch
-	{
-		firstTouchSeen = true; // set first Touch flag
-		digitalWrite(TFT_BL, HIGH); // switch on backlight
-		create_buttons(1); // init and show keypad
+		{
+			firstTouchSeen = true; // set first Touch flag
+			digitalWrite(TFT_BL, HIGH); // switch on backlight
+			create_buttons(1); // init and show keypad
 
-		startTimer(); // start a 30 second timer, to reset the
-		// display, if nothing mor happens
-		Serial.println("TOUCHED"); // just notice
+			startTimer(); // start a 30 second timer, to reset the
+			// display, if nothing more happens
+			Serial.println("TOUCHED"); // just notice
+		}
 	}
 	if(pin_ok) // the entered PIN was correct
 	{
 		Serial.println("PIN OK"); // just notice
 		pin_ok = false; // reset flag, to enter only once
+		bool connected = client.connect("ws://192.168.50.1:8888/");
+		if (!connected)
+		{
+			Serial.println("NO CONECT");
+		}
 //		client.connect(gateway, 8888, "/");
 		// try connect Websocket Server
 		// can we get a status?
-		client.send("stream"); // send something
+		Serial.println("send start Stream now");
+		client.send("stream_on"); // send something
 		//client.ping(); // send a ping
 	}
 
-}
 // Receive jpg now and display it
 // lcd.drawJpg(( uint8_t*)msg.c_str(), msg.length(),0,0); // it is from the LovyanGFX library and works fine
 

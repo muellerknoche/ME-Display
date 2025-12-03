@@ -15,17 +15,21 @@
 
 #define  DEBUG
 // Konstanten für Tastenposition
-int col_1 = 400;//(480 -290)/2;
-int col_2 = col_1 - 100;
-int col_3 = col_2 - 100;
-int row_1 = 10;
-int row_2 = row_1 + 100; 
-int row_3 = row_2 + 100;
-int row_4 = row_3 + 100;
-int sizeX = 90;
-int sizeY = 90;
+// x,y 0,0 = rechts oben 
+// X von oben nach unten
+// Y Rechts nach links
+//int col_1 = 400;//(480 -290)/2;
+int col_1 = 455;			// Y Abstand von rechts
+int col_2 = col_1 - 150;	// 
+int col_3 = col_2 - 150;
+int row_1 = 10;				// X Abstand = 10 von oben
+int row_2 = row_1 + 150; 	// X 10 + 130(key) + 10 Abstand
+int row_3 = row_2 + 150;
+int row_4 = row_3 + 150;
+int sizeX = 130;
+int sizeY = 130;
 bool failed = false;
-int loopPosX = 500;
+int loopPosX = 700;
 int loopPosY = 350;
 
 /**
