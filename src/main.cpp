@@ -22,10 +22,12 @@
  * @date 03.12.2025 mk KeyPad größer für Wurstfinger
  * neue Version 1.2.0
  * Connect geht Hardcoded aber noch kein Bild
- * 
+ * Jetzt Bild
+ * @note mk declare as finished
  */
 
 #include <Arduino.h>
+#include <iostream>
 
 #define DEBUG				// comment for final
 #include <PCA9557.h>		// file copied from CowPanel github
@@ -62,8 +64,19 @@ void IRAM_ATTR onTimer()
 {
 	// This code is executed every time the timer alarm triggers
   	timerFlag = true;
-	ESP.restart();
+	Serial.println("\rend of 30 Seconds");
+// 	if (is_stream)
+// 	{
+// 		Serial.println("STOPSTREAM");
+// 		stopstream = true;
+// //		is_stream = false;
+// 	}
+// 	else
+// 	{
+		ESP.restart();
+//	}
 }
+
 /**
  * @fn startTimer()
  * @author Rainer Müller-Knoche mk@muekno.de
@@ -200,6 +213,7 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 * @note firsttouched Flag for loop rein
  * @date 26.11.2025 mk
  * @date 27.11.2025 mk Comment
+ * @date 02.12.2025 mk änderungen für  Hw Ver 3
 */
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 {
@@ -293,7 +307,7 @@ void print_msg(char message[], int pos_X, int pos_Y, int schrift = 0)
  * @date 27.11.2025 mk indicator for WiFi connect or not 
  * @brief display flash 3 times if no connect, 2 times if connect
  * @date 28.11.2025 mk
- * @date 02.12.2025 Anpassung  an Cropanal HW Ver 3.0
+ * @date 02.12.2025 Anpassung an Crowpanal HW Ver 3.0
  *  */
 void setup()
 {
@@ -372,26 +386,17 @@ void setup()
 	Serial.print("wsPort : "); Serial.println(websockets_server_port);
 	Serial.print("wsPath : "); Serial.println(wsPath);
 
-//	const char* websockets_server_host = "192.168.50.1"; //Enter server adress
-    bool connected = client.connect("ws://192.168.50.1:8888/");
-    if(connected) {
-        Serial.println("Connected!");
-        client.send("Hello Server");
-    } else {
-        Serial.println("websockServer Not Connected!");
-    }
-
-	// run callback when messages are received
+//	const char* websockets_server_host = "192.168.50.1"; //Enter server adress0
     client.onMessage([&](WebsocketsMessage msg)
 	{
-    	Serial.print("Got Message: ");
+    	//Serial.print("Got Message: ");
 		if (msg.isBinary())
 		{
 		    const uint8_t* jpgData = (const uint8_t*)msg.c_str();  // Access binary data
     		size_t jpgLen = msg.length();
 		    //lcd.startWrite();  					// Begin transaction for faster drawing
     		lcd.drawJpg(jpgData, jpgLen, 0, 0);  	// Draw at (0,0) - adjust position/size as needed
-    		//lcd.endWrite();    					// End transaction
+    		//lcd.endWrite();    					// End transaction bringt nichts
   		}
   		else
 		{
@@ -432,9 +437,24 @@ void setup()
 #endif											//E
     // ... initialize disp_drv ...
 	lv_timer_handler();
-// lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
+	// lv_gui_button(char btnt[], char labelt[], uint32_t posX, Uint32_t posY, uint32_t sX, int sY)
+	uint8_t gwlen = gateway.length();
+	Serial.print("Gateway val: ");	Serial.println(gateway);
+	Serial.print("Gateway Size: ");	Serial.println(gwlen);
+	String wsHost =  "";
+	for (uint8_t i = 0;i < gwlen; i++)
+	{
+		wsHost += gateway[i];
+	}
+	String wsPort = ":8888/";
+	wsUrl = "ws://" + wsHost + wsPort;
 
-}	// End Setup
+	Serial.print("wsUrl: "); Serial.println(wsUrl);
+
+} // End Setup
+
+
+
 
 void loop()
 {
@@ -456,7 +476,18 @@ void loop()
 	{
 		Serial.println("PIN OK"); // just notice
 		pin_ok = false; // reset flag, to enter only once
-		bool connected = client.connect("ws://192.168.50.1:8888/");
+		bool connected = client.connect(wsUrl);
+		uint8_t i = 0;
+		while (!connected)
+		{
+			connected = client.connect(wsUrl);
+			i++;
+			if (i > 4)
+			{
+				break;
+			}
+		}
+
 		if (!connected)
 		{
 			Serial.println("NO CONECT");
@@ -466,7 +497,20 @@ void loop()
 		// can we get a status?
 		Serial.println("send start Stream now");
 		client.send("stream_on"); // send something
+		is_stream = true;
 		//client.ping(); // send a ping
+	}
+	if (stopstream)
+	{
+		Serial.println("STOPSTREAM xxx");
+		stopstream = false;
+		is_stream = false;
+		Serial.println("cc");
+		client.connect("ws://192.168.50.1:8888/");
+		Serial.println("cs");
+		client.send("STOP");
+		Serial.println("reset");
+		ESP.restart();
 	}
 
 // Receive jpg now and display it

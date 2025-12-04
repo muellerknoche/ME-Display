@@ -11,10 +11,13 @@ extern uint8_t reference_code[4];
 extern bool pin_ok;
 extern bool no_buttons;
 extern bool pinOkSet;
+extern bool stopstream;
 extern bool video;
+
 
 extern bool firstTouch;
 extern bool firstTouchSeen;
+extern bool is_stream;
 
 // defaults
 extern String defaultSsid;
@@ -38,5 +41,5 @@ extern uint8_t csPin;
 
 extern uint8_t pin_len;
 
-
+extern String wsUrl;
 #endif //  _MYGLOBALS_0111_H_

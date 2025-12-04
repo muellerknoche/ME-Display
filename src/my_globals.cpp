@@ -15,11 +15,13 @@ bool no_buttons = true;
 
 bool pin_ok = false;
 bool pinOkSet = false;
-
+bool stopstream = false; 
 bool video = false;
+
 
 bool firstTouch = false;
 bool firstTouchSeen = false;
+bool is_stream = false;
 
 // Default values if SD read fails
 String defaultSsid = "ELECROW";
@@ -41,3 +43,5 @@ String laenge; // = "4";
 uint8_t csPin = 10;
 
 uint8_t pin_len = 0;
+
+String wsUrl = "";
